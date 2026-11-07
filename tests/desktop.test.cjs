@@ -1,7 +1,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 test('Desktop bridge: sandbox, origin checks, external requests blocked, public-only exports',async()=>{
-  const contentEvents=new Map(),editCalls=[],menus=[];const sessionEvents=new Map();let permissionCheck;const handlers=new Map(),events=[],writes=[],copies=[],opened=[];let instance,requestFilter,permission,exportPath='/virtual/public.json';const prompts=[];let approveRpc=false;
+  const contentEvents=new Map(),editCalls=[],menus=[];const sessionEvents=new Map();let permissionCheck;const handlers=new Map(),events=[],writes=[],copies=[],opened=[];let instance,requestFilter,permission,exportPath='/virtual/public.json';const prompts=[];let approveRpc=false,devicePermission;
   class Window{
     constructor(options){instance=this;this.options=options;this.webContents={send:(...args)=>events.push(args),setWindowOpenHandler:fn=>this.open=fn,on:(name,fn)=>contentEvents.set(name,fn),copy:()=>editCalls.push('copy'),paste:()=>editCalls.push('paste'),cut:()=>editCalls.push('cut'),selectAll:()=>editCalls.push('selectAll')};}
     setMenu(){}setContentProtection(value){this.protected=value;}on(){}loadURL(url){this.url=url;}isDestroyed(){return false;}
@@ -9,7 +9,7 @@ test('Desktop bridge: sandbox, origin checks, external requests blocked, public-
   const fakeElectron={Menu:{buildFromTemplate:items=>({popup:()=>menus.push(items)})},app:{commandLine:{appendSwitch(){}},getPath:()=>'/virtual/profile',whenReady:()=>Promise.resolve(),requestSingleInstanceLock:()=>true,on(){},quit(){}},BrowserWindow:Window,
     clipboard:{writeText:async text=>copies.push(text),clear:()=>copies.push('<cleared>')},shell:{openExternal:async url=>opened.push(url)},
     ipcMain:{handle:(name,fn)=>handlers.set(name,fn)},dialog:{showSaveDialog:async()=>({canceled:false,filePath:exportPath}),showMessageBox:async(_w,options)=>{prompts.push(options.detail);return {response:approveRpc?1:0};}},
-    session:{fromPartition:()=>({setPermissionRequestHandler:fn=>permission=fn,setPermissionCheckHandler:fn=>permissionCheck=fn,on:(name,fn)=>sessionEvents.set(name,fn),webRequest:{onBeforeRequest:fn=>requestFilter=fn}})}};
+    session:{fromPartition:()=>({setDevicePermissionHandler:fn=>devicePermission=fn,setPermissionRequestHandler:fn=>permission=fn,setPermissionCheckHandler:fn=>permissionCheck=fn,on:(name,fn)=>sessionEvents.set(name,fn),webRequest:{onBeforeRequest:fn=>requestFilter=fn}})}};
   const appDir=path.join(__dirname,'../app');
   const context=vm.createContext({require:name=>name==='electron'?fakeElectron:name==='node:fs/promises'?{writeFile:async(...args)=>writes.push(args)}:name.startsWith('./')?require(path.join(appDir,name)):require(name),__dirname:appDir,URL,setImmediate,AbortController,console});
   vm.runInContext(fs.readFileSync(path.join(appDir,'main.cjs'),'utf8'),context);await new Promise(r=>setImmediate(r));
@@ -56,6 +56,19 @@ test('Desktop bridge: sandbox, origin checks, external requests blocked, public-
   await sessionEvents.get('select-hid-device')(deviceEvent,{frame:instance.webContents.mainFrame,deviceList:[{vendorId:1,deviceId:'other'},{vendorId:0x2c97,deviceId:'ledger'}]},id=>selected=id);assert.equal(selected,'ledger');await sessionEvents.get('select-hid-device')(deviceEvent,{frame:{url:instance.url},deviceList:[{vendorId:0x2c97,deviceId:'ledger'}]},id=>selected=id);assert.equal(selected,undefined);
   await sessionEvents.get('select-hid-device')(deviceEvent,{frame:{url:'https://example.org'},deviceList:[{vendorId:0x2c97,deviceId:'ledger'}]},id=>selected=id);assert.equal(selected,undefined);
   await handlers.get('ledger-end')(event);assert.equal(permissionCheck(instance.webContents,'hid','file://',{requestingUrl:instance.url,isMainFrame:true}),false);
+  // Trezor (WebUSB) and BitBox02 (WebHID): only the chosen family, never a signing source.
+  const req={requestingUrl:instance.url,isMainFrame:true};
+  assert.equal(await handlers.get('ledger-begin')(event,'nope'),false);
+  assert.equal(await handlers.get('ledger-begin')(event,'trezor'),true);
+  assert.equal(permissionCheck(instance.webContents,'usb','file://',req),true);assert.equal(permissionCheck(instance.webContents,'hid','file://',req),false);
+  selected='unset';await sessionEvents.get('select-usb-device')(deviceEvent,{frame:instance.webContents.mainFrame,deviceList:[{vendorId:0x2c97,productId:1,deviceId:'ledger'},{vendorId:0x1209,productId:0x53c0,deviceId:'boot'},{vendorId:0x1209,productId:0x53c1,deviceId:'trezor'}]},id=>selected=id);assert.equal(selected,'trezor');
+  selected='unset';await sessionEvents.get('select-hid-device')(deviceEvent,{frame:instance.webContents.mainFrame,deviceList:[{vendorId:0x2c97,deviceId:'ledger'}]},id=>selected=id);assert.equal(selected,undefined);
+  assert.equal(devicePermission({deviceType:'usb',device:{vendorId:0x1209,productId:0x53c1}}),true);assert.equal(devicePermission({deviceType:'hid',device:{vendorId:0x2c97}}),false);
+  assert.throws(()=>handlers.get('ledger-register')(event,rows),/Lecture Ledger/);
+  await handlers.get('ledger-end')(event);assert.equal(permissionCheck(instance.webContents,'usb','file://',req),false);assert.equal(devicePermission({deviceType:'usb',device:{vendorId:0x1209,productId:0x53c1}}),false);
+  assert.equal(await handlers.get('ledger-begin')(event,'bitbox'),true);
+  selected='unset';await sessionEvents.get('select-hid-device')(deviceEvent,{frame:instance.webContents.mainFrame,deviceList:[{vendorId:0x2c97,deviceId:'ledger'},{vendorId:0x03eb,productId:0x2403,deviceId:'bitbox'}]},id=>selected=id);assert.equal(selected,'bitbox');
+  await handlers.get('ledger-end')(event);
   assert.equal(await handlers.get('forget')(event),true);
   assert.throws(()=>handlers.get('ledger-register')(event,rows),/Lecture Ledger/);
   const blocked=await handlers.get('transfer-prepare')(event,{from:publicAddress,path:"m/44'/60'/0'/0/0",recipient:publicAddress,amount:'1',asset:'ETH',endpoint:'https://rpc.example.org'});assert(blocked.error.includes('réservé'));

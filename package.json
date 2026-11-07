@@ -16,7 +16,7 @@
     "test:security": "node --test tests/security.test.cjs",
     "verify:release": "node scripts/verify-release.cjs",
     "verify:privacy": "node scripts/verify-privacy.cjs",
-    "build:vendor": "node scripts/build-vendor.cjs && npm run build:ledger",
+    "build:vendor": "node scripts/build-vendor.cjs && npm run build:ledger && node scripts/build-bitbox.cjs",
     "verify:vendor": "node scripts/verify-vendor.cjs",
     "build:linux": "npm run build:vendor && npm run verify:vendor && npm run verify:privacy && electron-builder --linux AppImage --x64 --publish never",
     "build:mac": "npm run build:vendor && npm run verify:vendor && npm run verify:privacy && electron-builder --mac dmg --arm64 --publish never"
