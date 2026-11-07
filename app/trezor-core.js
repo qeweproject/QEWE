@@ -74,10 +74,8 @@
   }
   function explain(error) {
     if (error?.code === 'PIN_MATRIX') return error.message;
-    if (error?.name === 'LedgerReadTimeout') return 'Le Trezor ne répond pas. Déverrouillez-le, fermez Trezor Suite, puis rebranchez-le.';
-    if (/NotFound|NotAllowed|cancel/i.test(error?.name || '') || /No device selected/i.test(error?.message || '')) return 'Connexion annulée ou aucun Trezor autorisé.';
-    if (/Disconnected|NetworkError|InvalidState/.test(error?.name || '')) return 'Trezor débranché ou utilisé par une autre application (fermez Trezor Suite).';
-    if (error?.name === 'TrezorError') return 'Trezor : ' + error.message;
+    if (/NotFound|NotAllowed|AbortError/.test(error?.name || '') || /No device selected/i.test(error?.message || '')) return 'Connexion annulée ou aucun appareil autorisé.';
+    if (error?.name === 'TrezorError' && !['UNEXPECTED', 'LOOP', 'ADDRESS'].includes(error.code)) return 'Trezor : ' + error.message;
     return 'Lecture Trezor impossible. Fermez Trezor Suite, déverrouillez le Trezor et réessayez.';
   }
   const api = { MSG, VENDOR, PRODUCT, encodeGetAddress, encodePassphraseAck, parse, frame, receive, call, initialize, readAddress, explain, TrezorError, varint };

@@ -8,7 +8,7 @@ function controls(){
   window.NewWallet?.controls(busy);
   window.OfflineTransactions?.controls(busy);
   window.Transfers?.controls(busy);
-  if($('ledger-read')){$('ledger-read').hidden=!desktop.ledgerAvailable;$('ledger-read').disabled=busy;$('ledger-info').hidden=!desktop.ledgerAvailable;}
+  if($('ledger-read')){$('ledger-read').hidden=!desktop.ledgerAvailable;$('ledger-read').disabled=busy;$('ledger-info').hidden=!desktop.ledgerAvailable;for(const id of ['trezor-read','bitbox-read'])if($(id)){$(id).hidden=!desktop.ledgerAvailable;$(id).disabled=busy;}}
   $('derive').disabled=busy;$('import').disabled=busy;$('addresses').disabled=busy||!rows.length;
   $('copy-all').disabled=busy||!rows.length;
   $('scan').disabled=busy||!rows.length;$('refresh-block').disabled=busy||!rows.length;$('csv').disabled=busy||!done;$('stop').disabled=!busy;$('stop').hidden=!busy;
@@ -119,21 +119,34 @@ $('derive').addEventListener('click',async()=>{
   worker.postMessage({phrase,password,language,modes,custom,limit,options});
   }catch(_){worker?.terminate();worker=null;busy=false;controls();status('Impossible de démarrer la génération locale. Fermez puis relancez l’application, ou réinstallez la version 3.1.0.',true);}
 });
-if($('ledger-read'))$('ledger-read').addEventListener('click',async()=>{
-  if(busy)return;
+// Hardware wallets. Ledger: addresses + signing. Trezor and BitBox02: public address reads only (experimental).
+const DEVICES={
+  ledger:{name:'Ledger',connect:signal=>LedgerUsb.connect(signal),explain:e=>LedgerCore.explain(e)},
+  trezor:{name:'Trezor',connect:signal=>TrezorUsb.connect(signal),explain:e=>TrezorCore.explain(e)},
+  bitbox:{name:'BitBox02',connect:signal=>BitBoxUsb.connect(signal,showPairing),explain:e=>{
+    if(e?.name==='BitBoxError')return e.message;
+    if(/NotFound|NotAllowed|user-abort|abort/i.test(`${e?.name} ${e?.code} ${e?.message}`))return 'Connexion annulée ou aucun appareil autorisé.';
+    return 'Lecture BitBox02 impossible. Fermez BitBoxApp, déverrouillez le BitBox02 et réessayez.';}}
+};
+function showPairing(code){const d=$('pairing-dialog');if(code){$('pairing-code').textContent=code;if(!d.open)d.showModal();}else{$('pairing-code').textContent='';if(d.open)d.close();}}
+async function readDevice(kind){
+  if(busy)return;const device=DEVICES[kind],ledger=kind==='ledger';
   let session=null,permissionOpened=false;const selected=[...document.querySelectorAll('input[name=mode]:checked')].map(e=>e.value),custom=$('custom').value.trim(),limit=Number($('address-count').value);let items;
   try{items=LedgerCore.plan(selected,custom,limit);}catch(error){status(error.message,true);return;}
   try{
-    busy=true;controls();await reset();busy=true;controls();status('Branchez le Ledger en USB, déverrouillez-le sur son écran et ouvrez Ethereum…');
-    if(!await desktop.beginLedger())throw Error('Busy');permissionOpened=true;
+    busy=true;controls();await reset();busy=true;controls();
+    status(ledger?'Branchez le Ledger en USB, déverrouillez-le sur son écran et ouvrez Ethereum…':`Branchez le ${device.name} en USB et déverrouillez-le…`);
+    if(!await desktop.beginLedger(kind))throw Error('Busy');permissionOpened=true;
     ledgerController=new AbortController();
-    session=await LedgerUsb.connect(ledgerController.signal);
-    const output=await LedgerCore.collect(session,items,{signal:ledgerController.signal,onProgress:({completed,total})=>status(`Lecture Ledger : ${completed} / ${total} chemins…`)});
-    rows=output.rows;if(rows.length)await window.Transfers?.register(rows);render();$('derivation-info').textContent='Adresses publiques lues sur le Ledger USB. Seed et clés privées restent sur l’appareil.';
-    status(output.complete?`${rows.length} adresses uniques lues sur le Ledger. Prêt pour l’export ou la vérification des soldes.`:`${output.error} ${rows.length} adresse(s) conservée(s) sur ${output.total} chemins demandés ; lecture incomplète.`,!output.complete);
-  }catch(error){status(LedgerCore.explain(error),true);}
-  finally{try{await session?.close();}catch{}try{if(permissionOpened)await desktop.endLedger();}catch{}ledgerController=null;busy=false;controls();}
-});
+    session=await device.connect(ledgerController.signal);
+    const output=await LedgerCore.collect(session,items,{signal:ledgerController.signal,explain:device.explain,onProgress:({completed,total})=>status(ledger?`Lecture Ledger : ${completed} / ${total} chemins…`:`Lecture du ${device.name} : ${completed} / ${total} chemins…`)});
+    rows=output.rows;if(ledger&&rows.length)await window.Transfers?.register(rows);render();
+    $('derivation-info').textContent=ledger?'Adresses publiques lues sur le Ledger USB. Seed et clés privées restent sur l’appareil.':`Adresses publiques lues sur le ${device.name}. Lecture seule : les envois passent par un Ledger ou par les transactions hors ligne.`;
+    status(output.complete?(ledger?`${rows.length} adresses uniques lues sur le Ledger. Prêt pour l’export ou la vérification des soldes.`:`${rows.length} adresses uniques lues sur le ${device.name}.`):`${output.error} ${rows.length} adresse(s) conservée(s) sur ${output.total} chemins demandés ; lecture incomplète.`,!output.complete);
+  }catch(error){status(device.explain(error),true);}
+  finally{showPairing(null);try{await session?.close();}catch{}try{if(permissionOpened)await desktop.endLedger();}catch{}ledgerController=null;busy=false;controls();}
+}
+for(const kind of Object.keys(DEVICES))$(kind+'-read')?.addEventListener('click',()=>readDevice(kind));
 $('refresh-block').addEventListener('click',()=>{if(!busy&&rows.length)$('scan').click();});
 $('scan').addEventListener('click',async()=>{
   const endpoint=$('endpoint').value.trim(),history=$('history').checked,usd=$('usd').checked,discover=$('discover').checked,gap=Number($('gap').value||0);let tokens,networks;

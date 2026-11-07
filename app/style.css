@@ -45,3 +45,15 @@ body{user-select:text;-webkit-user-select:text}button,summary,label.check{user-s
 .discovered>div{white-space:pre-line;font-size:.85em;word-break:break-all}
 .keystore-fields label{display:block;margin-top:12px}.keystore-fields #keystore-name{margin-left:10px}
 .mode-wallets{display:block;font-size:11px;color:var(--muted);margin:2px 0 4px;line-height:1.35}
+/* Hardware wallet buttons: Ledger first and largest, others beside it. */
+.device-buttons{display:flex;flex-direction:column;align-items:stretch;gap:8px;min-width:260px}
+.device-primary{display:flex;align-items:center;justify-content:center;gap:10px;font-size:15px;padding:16px 26px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.device-icon{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;flex:none}
+.device-icon.small{width:16px;height:16px}
+.device-others{display:flex;gap:8px}
+.device-secondary{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;font-size:12px}
+.beta-badge{font-size:9px;text-transform:uppercase;letter-spacing:.06em;border:1px solid var(--line);border-radius:999px;padding:1px 6px;opacity:.8}
+.pairing-dialog{max-width:420px;text-align:center}
+.pairing-dialog code{display:block;font-size:20px;letter-spacing:.08em;margin:14px 0;white-space:pre-wrap}
+@media (max-width:760px){.ledger-hero{flex-direction:column;align-items:stretch}.device-buttons{min-width:0}}
+.pairing-dialog{background:var(--panel,#111);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:24px}.pairing-dialog::backdrop{background:rgba(0,0,0,.55)}

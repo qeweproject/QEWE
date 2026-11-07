@@ -24,7 +24,7 @@
   if(/Disconnected|DisconnectedDevice|NetworkError/.test(error?.name||''))return 'Ledger débranché. Rebranchez-le, déverrouillez-le et ouvrez Ethereum.';
   return 'Lecture Ledger impossible. Vérifiez le câble USB, ouvrez Ethereum et fermez Ledger Live ou les autres logiciels utilisant le Ledger.';
  }
- async function collect(session,items,{signal,onProgress=()=>{}}={}){
+ async function collect(session,items,options={}){const {signal,onProgress=()=>{}}=options;
   const collected=[];let completed=0;
   try{
    for(let i=0;i<items.length;i++){
@@ -32,7 +32,7 @@
     for(const alias of item.aliases)collected.push({address,...alias});completed++;onProgress({completed,total:items.length});
    }
    return {rows:B.normalizeRows(collected),completed,total:items.length,complete:true};
-  }catch(error){return {rows:collected.length?B.normalizeRows(collected):[],completed,total:items.length,complete:false,stopped:!!signal?.aborted,error:signal?.aborted?'Lecture Ledger arrêtée.':explain(error)};}
+  }catch(error){return {rows:collected.length?B.normalizeRows(collected):[],completed,total:items.length,complete:false,stopped:!!signal?.aborted,error:signal?.aborted?'Lecture Ledger arrêtée.':(options.explain||explain)(error)};}
  }
  async function signTransfer(send,request){
   const C=typeof module!=='undefined'?require('./transfer-codec.js'):root.TransferCodec,d=C.validatePlan(request);
