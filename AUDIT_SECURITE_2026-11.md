@@ -69,8 +69,6 @@ Par priorité :
 8. **Mettre à jour Electron** à chaque version de sécurité de la branche
    supportée ; une vieille version de Chromium est le risque le plus probable
    à long terme.
-9. **Adresse de don** : elle relie publiquement ce dépôt à toute l'activité
-   on-chain de cette adresse. Utiliser une adresse neuve, dédiée aux dons.
 
 ## Avant de passer le dépôt en public
 
