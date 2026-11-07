@@ -32,6 +32,9 @@ your seed, and tells you where your funds are.
 
 ## Main features
 
+- **Trezor and BitBox02** (experimental): read public addresses from a Trezor
+  Model T / Safe 3 / Safe 5 or a BitBox02. Ledger remains the main device and the
+  only one used for signing.
 - **Multi-network check** (opt-in): native balance and nonce of every address on
   Arbitrum One, Base, OP Mainnet, Polygon PoS, BNB Smart Chain and Gnosis, with
   default public RPCs or your own. Transactions remain Ethereum mainnet only.

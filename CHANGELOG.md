@@ -13,6 +13,12 @@
 - Optional Blockscout discovery of all ERC20/ERC721/ERC1155 holdings, sanitized,
   display-only, excluded from the "positive balance" filter and USD estimate.
 - CSV export: other networks and discovered tokens columns.
+- Experimental Trezor (Model T, Safe 3, Safe 5) and BitBox02 public address
+  reads, as secondary buttons beside the Ledger one. Trezor uses a minimal
+  original Codec v1 implementation over WebUSB (no Trezor library, no remote
+  iframe); BitBox02 uses the official `@bitboxswiss/bitbox-api` 0.4.0 (pure
+  TypeScript, Noise pairing code shown in a dialog). Device permissions are
+  limited to the chosen family during the read. Signing stays Ledger/offline.
 - USD estimate, indexed history and Blockscout discovery are now checked by
   default (maintainer choice); selecting an extra network unchecks them,
   unselecting every network checks them again. Blockscout and DefiLlama
