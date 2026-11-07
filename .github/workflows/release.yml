@@ -3,6 +3,12 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Exact version tag to publish after all checks; leave empty for builds only'
+        type: string
+        required: false
+        default: ''
 permissions:
   contents: read
 concurrency:
@@ -70,7 +76,7 @@ jobs:
           compression-level: 0
           retention-days: 3
   publish:
-    if: ${{ !github.event.repository.private && startsWith(github.ref, 'refs/tags/v') }}
+    if: ${{ !github.event.repository.private && (startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.release_tag != '')) }}
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -80,7 +86,7 @@ jobs:
       id-token: write
       attestations: write
     env:
-      RELEASE_TAG: ${{ github.ref_name }}
+      RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
       GH_REPO: ${{ github.repository }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
@@ -117,5 +123,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Manual publication creates the exact checked commit's tag only after
+          # native payload and provenance checks. Never move an existing tag.
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            if gh api "repos/$GH_REPO/git/ref/tags/$RELEASE_TAG" > release-tag.json; then
+              jq -e --arg sha "$GITHUB_SHA" '.object.type == "commit" and .object.sha == $sha' release-tag.json
+            else
+              gh api --method POST "repos/$GH_REPO/git/refs" -f ref="refs/tags/$RELEASE_TAG" -f sha="$GITHUB_SHA"
+            fi
+          fi
           gh release create "$RELEASE_TAG" release-files/* --verify-tag --draft --prerelease --title "QEWE ${RELEASE_TAG#v} · public preview" --notes-file RELEASE_NOTES.md
           gh release edit "$RELEASE_TAG" --draft=false --prerelease --latest=false
