@@ -44,7 +44,11 @@ Section "Installation"
   RMDir /r "$SMPROGRAMS\Quick Ethereum Balance Explorer"
   Delete "$INSTDIR\Quick Ethereum Balance Explorer.exe"
   SetOutPath "$INSTDIR"
-  File /r "${PROJECT_DIR}/../deliverables/win-unpacked/*"
+  !ifdef NSIS_WIN32_MAKENSIS
+    File /r "${PROJECT_DIR}\..\deliverables\win-unpacked\*"
+  !else
+    File /r "${PROJECT_DIR}/../deliverables/win-unpacked/*"
+  !endif
   WriteUninstaller "$INSTDIR\Desinstaller.exe"
   CreateShortCut "$DESKTOP\Quick Ethereum Wallet Explorer.lnk" "$INSTDIR\Quick Ethereum Wallet Explorer.exe"
   CreateDirectory "$SMPROGRAMS\Quick Ethereum Wallet Explorer"
