@@ -1,72 +1,22 @@
-QEWE 3.1.0 — Quick Ethereum Wallet Explorer — Windows 11 x64
+QEWE — Quick Ethereum Wallet Explorer — 3.2.0-rc.3
 Ethereum Wallet Analysis & Offline Signing Tool
 
-Cette version candidate ajoute des corrections de sécurité. Aucun audit
-indépendant ni essai sur un Ledger physique ou une vraie session Windows 11
-n'a été réalisé ici. Les tests utilisent des portefeuilles publics de test.
+Préversion publique expérimentale, gratuite et open source sous MIT. Aucun audit externe ni certification de sécurité n’est revendiqué.
 
-INSTALLER
-Fermer QEWE, puis lancer l'installateur 3.1.0. Installation personnelle, sans
-élévation administrateur, avec raccourcis. Le programme n'est pas signé par
-un certificat d'éditeur. Ne désactivez pas vos protections pour l'installer.
-L'anglais est initial ; globe en haut à droite pour le français ou 19 autres
-choix. Certains diagnostics des langues ajoutées restent en anglais.
+Télécharger uniquement depuis https://github.com/qeweproject/QEWE/releases
+Présentation : https://qeweproject.github.io/QEWE/
+Vérification des empreintes et attestations : docs/VERIFY.md
 
-LEDGER
-Brancher l'appareil, saisir son PIN SUR LE LEDGER et ouvrir Ethereum.
-Lire le Ledger USB utilise Live, Legacy, BIP44 et le chemin personnalisé.
-25 adresses par chemin au départ, de 1 à 10 000 ; les doublons gardent leurs
-chemins. Les grandes lectures sont longues ; commencer à 25 et augmenter.
-Ne jamais saisir les mots de récupération d'un Ledger dans le logiciel.
+Fermer QEWE puis installer le paquet correspondant : Windows x64, Ubuntu amd64, Mac Apple Silicon arm64 ou Mac Intel x64. Les paquets Windows ne sont pas signés Authenticode et les Mac ne sont pas notariés. Ne pas désactiver les protections du système pour contourner un blocage.
+Sur Windows, les raccourcis Bureau et menu Démarrer sont recréés avec le logo loupe. Une ancienne épingle personnelle de la barre des tâches peut nécessiter de désépingler puis réépingler le nouveau raccourci.
 
-SOLDES
-Cliquer Vérifier les soldes. Les 25 ERC20 restent sélectionnés. La flèche
-ouvre RPC et options. Historique indexé et cours USD sont maintenant décochés
-initialement ; leur activation transmet des données publiques aux fournisseurs
-indiqués. Le RPC choisi reçoit les adresses interrogées. Une erreur signifie
-inconnu, pas zéro. Le bouton de bloc relance un contrôle au dernier bloc.
-Copie par adresse/page (250 lignes), copie complète, JSON et CSV disponibles.
-Les Blockies sont générés localement. Le bouton soleil/lune change le thème.
+Privilégier le Ledger ou l’import d’adresses publiques. Le PIN se saisit sur le Ledger ; ne jamais saisir sa phrase dans l’ordinateur. 25 adresses par chemin au départ, réglables de 1 à 10000 ; les doublons sont regroupés. Une table est limitée à 40000 lignes combinées.
+Les prix, indexeurs et découvertes optionnelles sont désactivés au départ et demandent une confirmation avant leur première utilisation. Les RPC voient les adresses consultées, peuvent les relier et fournir des réponses fausses. Une recherche n’est pas exhaustive de tous les tokens ou de tous les mouvements historiques.
 
-PHRASES ET CLÉS
-Les volets secondaires lisent localement BIP39, formats historiques connus,
-xprv racine et clés privées brutes. Les formats historiques non validés sont
-réservés à la lecture. La création de phrase utilise l'aléa cryptographique
-local, avec 12 ou 24 mots. Une phrase créée sur le PC reste exposée au PC.
-Aucun effacement physique garanti de la mémoire, du swap ou du presse-papiers.
+Les transactions restent des transferts ETH/ERC20 sur Ethereum mainnet. Vérifier adresse, contrat, montant, nonce et frais, puis confirmer sur le Ledger. Un fichier signé autorise le transfert correspondant ; le conserver privé jusqu’à la diffusion voulue.
+Pour signer avec une seed ou clé logicielle, utiliser un ordinateur de confiance physiquement déconnecté. Le mode hors ligne du logiciel ne déconnecte pas tout le système. JavaScript ne garantit ni l’effacement physique de la RAM ni celui de l’historique du presse-papiers.
 
-TRANSACTIONS
-Envoyer Tx est proposé pour les adresses lues sur le Ledger dans la session.
-Choisir destinataire, actif et montant ; préparer, vérifier le récapitulatif,
-puis comparer et confirmer sur le Ledger. Les adresses reconnues dans la
-lecture sont distinguées des destinataires externes ; le logiciel revérifie
-les chemins reconnus avant signature. Les contrats ERC20 se personnalisent
-sans changer la sélection initiale. Les tokens envoyables doivent disposer
-d'un descriptif Ledger pris en charge.
-Les limites absolues sont : 0,05 ETH de frais maximum par transaction,
-1000 Gwei par gas, 50 Gwei de pourboire et 1 000 000 unités de gas.
-Ce sont des plafonds de sécurité, pas les frais automatiquement facturés.
-Les frais proposés restent à vérifier ; un RPC peut donner de fausses données.
+Les tests automatisés et les contrôles de paquets ne remplacent pas un essai matériel. Aucun Ledger/Trezor/BitBox02 physique ou ensemble complet de versions d’OS n’a été testé par l’environnement de construction. Lire SECURITY.md et les limites de docs/VERIFY.md.
 
-HORS LIGNE
-Préparer/exporter le JSON non signé sur le poste connecté. Sur le poste
-réellement déconnecté, importer et vérifier dans Transactions hors ligne,
-activer Mode hors ligne puis signer avec Ledger, BIP39 standard, xprv racine
-ou clé brute. Le mode ne peut pas être retiré pendant une signature active.
-Exporter le JSON signé ; l'importer ensuite sur le poste connecté et diffuser
-explicitement. Les fichiers signés autorisent le transfert correspondant :
-ne pas les publier prématurément. Le logiciel ne diffuse jamais automatiquement
-un export et ne répète pas un envoi incertain : vérifier le hash avant de réessayer.
-Mainnet Ethereum, EIP-1559, transferts ETH/ERC20 uniquement ; pas d'approval,
-EIP-712, signature de message ou appel de contrat arbitraire.
-
-DONS VOLONTAIRES
-0x1B8147Eb5b45Cf7a9569EF23bd8ca42b63867B50
-Adresse visible et copiable. Aucune commission cachée ou transaction de don
-automatique. Cette adresse est publique et peut relier des activités blockchain.
-
-CODE ET LICENCES
-README.md décrit la reconstruction, SECURITY.md les limites, SECURITY_REVIEW.md
-les changements, VALIDATION.txt les résultats. Proposition de licence MIT pour
-le code original, crédits et licences des tiers conservés. Un fork peut changer
-le code et l'adresse de tips. Aucun dépôt ni release n'est publié par ce paquet.
+Tips facultatifs Ethereum mainnet : 0x1B8147Eb5b45Cf7a9569EF23bd8ca42b63867B50
+Aucun don automatique ni frais cachés. Les transferts blockchain sont publics.

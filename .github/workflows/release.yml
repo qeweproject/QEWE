@@ -1,21 +1,42 @@
-# Windows installer build with GitHub build-provenance attestation, on version
-# tags only. Source checks stay in checks.yml. Pin every remaining action
-# (attest-build-provenance, upload-artifact) to a full commit SHA, like checkout
-# and setup-node, before the first release.
-name: Release build
+name: Reviewed installers
 on:
   push:
-    tags: ["v*"]
+    tags: ['v*']
+  workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: installers-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  build-windows:
-    runs-on: windows-latest
-    timeout-minutes: 45
-    permissions:
-      contents: read
-      id-token: write       # Sigstore signing of the attestation
-      attestations: write   # GitHub build provenance
+  build:
+    if: ${{ !github.event.repository.private }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win
+            arch: x64
+            command: npm run build
+            extension: exe
+          - os: ubuntu-24.04
+            platform: linux
+            arch: x64
+            command: npm run build:linux
+            extension: deb
+          - os: macos-latest
+            platform: mac
+            arch: arm64
+            command: npm exec -- electron-builder --mac dmg --arm64 --publish never
+            extension: dmg
+          - os: macos-latest
+            platform: mac
+            arch: x64
+            command: npm exec -- electron-builder --mac dmg --x64 --publish never
+            extension: dmg
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
@@ -24,21 +45,77 @@ jobs:
         with:
           node-version: '24'
       - run: npm ci --ignore-scripts
+      - run: npm audit --audit-level=low
       - run: npm audit signatures
+      - run: npm run build:vendor
       - run: npm run verify:vendor
+      - run: git diff --exit-code -- app/vendor
+      - run: npm run verify:privacy
       - run: npm test
-      - run: node node_modules/electron/install.js
-      - run: node node_modules/esbuild/install.js
-      - run: npm run build
-      - run: npm run verify:release
-      - name: SHA256 of the installer
-        shell: pwsh
-        run: Get-FileHash ../deliverables/*.exe -Algorithm SHA256 | Format-List
-      - uses: actions/attest-build-provenance@v2
+      - run: npm run test:dom
+      - run: ${{ matrix.command }}
+      - run: node scripts/verify-release.cjs ${{ matrix.platform }} ${{ matrix.arch }}
+      - name: Collect verified installer
+        shell: bash
+        run: |
+          mkdir -p release-files
+          cp ../deliverables/QEWE_*.${{ matrix.extension }} release-files/
+          cp ../deliverables/QEWE_*.${{ matrix.extension }}.sha256 release-files/
+          node scripts/source-manifest.cjs > release-files/SOURCE_SHA256.json
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
-          subject-path: ../deliverables/*.exe
-      - uses: actions/upload-artifact@v4
-        with:
-          name: installer
-          path: ../deliverables/*.exe
+          name: qewe-${{ matrix.platform }}-${{ matrix.arch }}
+          path: release-files/
           if-no-files-found: error
+          compression-level: 0
+          retention-days: 3
+  publish:
+    if: ${{ !github.event.repository.private && startsWith(github.ref, 'refs/tags/v') }}
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+      id-token: write
+      attestations: write
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: qewe-*
+          path: downloaded-installers
+      - name: Dependency inventory and release manifest
+        run: |
+          mkdir -p release-files
+          npm sbom --package-lock-only --sbom-format=cyclonedx > release-files/SBOM.cdx.json
+          node scripts/prepare-public-release.cjs
+      - name: Attest the verified files
+        id: provenance
+        uses: actions/attest-build-provenance@e4d4f7c39adfa4c260fb5c147f0622000aa14b99 # v4.0.0
+        with:
+          subject-path: release-files/*
+      - name: Verify provenance before distribution
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PROVENANCE_BUNDLE: ${{ steps.provenance.outputs.bundle-path }}
+        run: |
+          test -s "$PROVENANCE_BUNDLE"
+          cp "$PROVENANCE_BUNDLE" release-files/provenance.sigstore.json
+          for file in release-files/*.exe release-files/*.deb release-files/*.dmg; do
+            gh attestation verify "$file" --repo "$GH_REPO" --signer-workflow "$GH_REPO/.github/workflows/release.yml" --deny-self-hosted-runners
+          done
+      - name: Publish a complete experimental preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$RELEASE_TAG" release-files/* --verify-tag --draft --prerelease --title "QEWE ${RELEASE_TAG#v} · public preview" --notes-file RELEASE_NOTES.md
+          gh release edit "$RELEASE_TAG" --draft=false --prerelease --latest=false

@@ -1,7 +1,7 @@
 /* Public data only: normalize, merge and retain every derivation association. */
 (function(root){
   const E=typeof module!=='undefined'?require('ethers'):root.ethers;
-  const MODES=['Clé privée · lecture seule', 'Ledger Live / MEW','Ledger Legacy / MEW','Standard / MetaMask / MEW','BIP44 / MetaMask / MEW','MEW personnalisé'];
+  const MODES=['Clé privée · lecture seule', 'Ledger Live / MEW','Ledger Legacy / MEW','Standard / MetaMask / MEW','BIP44 / MetaMask / MEW','MEW personnalisé','Ethereum Classic / MEW','Ledger Live ETC','Ledger ETC / MEW','Testnet / MEW','RSK / MEW','Fichier keystore JSON · lecture seule'];
   function association(r){
     if(!r||typeof r!=='object')throw Error('Association invalide.');
     const path=r.path||'';

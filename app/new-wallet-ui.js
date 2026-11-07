@@ -12,7 +12,7 @@
  el('new-seed-show').onchange=()=>{el('new-seed-phrase').hidden=!el('new-seed-show').checked;};
  window.addEventListener('blur',()=>{el('new-seed-show').checked=false;el('new-seed-phrase').hidden=true;});
  el('new-seed-select').onclick=()=>{if(!phrase)return;el('new-seed-show').checked=true;el('new-seed-phrase').hidden=false;el('new-seed-phrase').focus();el('new-seed-phrase').select();};
- el('new-seed-use').onclick=()=>{if(!phrase||busy)return;el('phrase').value=phrase;el('password').value='';el('language').value=language;el('recovery-format').value='bip39';el('pbkdf2-rounds').value='2048';el('extra-word').checked=false;el('expand-words').checked=false;el('derive').click();};
+ el('new-seed-use').onclick=()=>{if(!phrase||busy)return;el('phrase').value=phrase;el('password').value='';el('language').value=language;el('recovery-format').value='bip39';el('recovery-format').dispatchEvent(new Event('change'));el('pbkdf2-rounds').value='2048';el('extra-word').checked=false;el('expand-words').checked=false;el('derive').click();};
  el('new-seed-clear').onclick=()=>{clear();status('Nouvelle phrase effacée de l’interface.');};
  window.NewWallet={clear,cancel(){clear();busy=false;controls();status('Création arrêtée.');},get active(){return !!generator;},controls(value){for(const id of ['new-seed-create','new-seed-count','new-seed-language','new-seed-use','new-seed-clear','new-seed-select'])el(id).disabled=value;}};
 })();

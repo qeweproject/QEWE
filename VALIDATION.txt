@@ -1,40 +1,8 @@
-QEWE 3.1.0 — SECURITY-HARDENING CANDIDATE
+QEWE 3.2.0-rc.3 — public preview validation scope
 
-Observed checks on 2026-11-07:
-- npm audit across runtime and build lockfile dependencies: 0 reported known
-  vulnerabilities (361 resolved entries, including platform-optional packages).
-- npm audit signatures: 335 installed packages with verified registry
-  signatures; 49 with verified attestations. See validation/ for output summaries.
-- npm test: 45 tests passed. This includes real generation of 10 000 BIP44
-  addresses, imported final index, 20 interface languages, public-only IPC,
-  exact transaction encoding, fee limits, malformed RPC/body-size refusals,
-  offline signer-format restrictions and offline signing-state lock.
-- npm run test:dom: passed. Local worker derivation, filters, exports, public
-  scan and secret-field clearing use public sample wallets and mock networks.
-- Native Electron/Linux: English default and new name/subtitle, worker
-  derivation, pagination/copy/export of 10 000 rows passed without network calls.
-- Native Ledger workflow with simulated device/RPC: recipient ownership-path
-  checks, exact signing payload and one-time simulated broadcast passed.
-- Native offline workflow: actual worker signatures for standard BIP39, root
-  xprv, raw private key and a simulated Ledger passed; no network during signing;
-  import/export, clearing, nonce/simulation and explicit simulated broadcast.
-- npm run verify:privacy: passed first-party email/path-pattern check. A separate
-  private-name scan found no previously known user name/email in first-party
-  publishable material. Upstream author credits are intentionally retained.
-- npm run verify:vendor: 24 vendored files match the checksum manifest. ethers,
-  wordlists and WebHID code regenerate from pinned upstream npm packages.
+Source checks run dependency audit/signature verification, vendor rebuild/checksums, privacy-pattern checks, unit tests and DOM/worker tests.
+The release workflow builds Windows x64, Ubuntu amd64, Mac arm64 and Mac x64 natively, then compares installed application bytes, icons and runtime protections to the exact source. All four jobs must succeed before a draft distribution is published.
+Release files include checksums, source metadata, a dependency SBOM and build provenance. Provenance is verified before publication. Consult the actual tagged workflow run for results; this file is not an audit certificate.
 
-Release verification:
-The build uses ASAR-only loading/integrity validation and disables Node-mode,
-NODE_OPTIONS and inspector environment/CLI fuses. npm run verify:release reads
-these bits in the packaged Windows EXE and compares every app file with the
-source. This command must succeed before distributing the installer.
-
-Limits:
-No real funds, user seeds or production wallets used. No Windows 11 execution,
-physical Ledger test, independent audit or full binary reproducibility claim.
-The legacy official Ledger WebHID transport is deprecated/unmaintained upstream;
-separate SDK migration and hardware tests remain required. npm signatures and
-zero reported vulnerabilities do not prove that upstream code is harmless.
-The installer is unsigned; local malware can replace it. Donation-address
-transactions can connect a pseudonym to other public or identified activity.
+Public disposable wallets and mocked RPC/device responses are used by tests. A simulated interface demonstration is not proof of hardware interaction. Physical wallet testing, a complete OS execution matrix, independent audit and independent bit-for-bit installer reproducibility have not been performed by this build environment.
+Windows lacks an Authenticode publisher signature; Mac signatures are ad hoc without Apple notarization. Do not disable sandbox or OS security to make a preview work.

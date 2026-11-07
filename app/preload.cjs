@@ -22,7 +22,7 @@ contextBridge.exposeInMainWorld('desktop',{
   transferStatus:request=>ipcRenderer.invoke('transfer-status',request),
   cancelTransfer:request=>ipcRenderer.invoke('transfer-cancel',request),
   openTransaction:hash=>ipcRenderer.invoke('open-transaction',hash),
-  beginLedger:()=>ipcRenderer.invoke('ledger-begin'),
+  beginLedger:(kind)=>ipcRenderer.invoke('ledger-begin',kind),
   endLedger:()=>ipcRenderer.invoke('ledger-end'),
   scan:request=>ipcRenderer.invoke('scan',request),
   cancel:()=>ipcRenderer.invoke('cancel'),

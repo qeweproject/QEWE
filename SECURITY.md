@@ -1,51 +1,26 @@
 # Security policy
 
-QEWE is experimental personal-wallet software, with no independent audit or
-security certification. Only the newest reviewed release candidate is maintained.
-No amount of automated scanning guarantees absence of malicious or vulnerable
-upstream code.
+QEWE is experimental software, not an independently audited or certified wallet. The public preview is for review and cautious testing, preferably with public addresses or disposable test wallets. Never type a Ledger recovery phrase into a computer application.
 
-Before a public release, maintainers must enable GitHub private vulnerability
-reporting. Until then, there is no published reporting endpoint; do not send
-sensitive reports to guessed accounts or open public issues exposing wallet data.
-Reproduce with public disposable test wallets only. Never include real keys,
-phrases, RPC API tokens, unsigned personal transaction plans or signed envelopes.
+## Report privately
 
-For every candidate:
+Use the repository Security tab's private vulnerability reporting feature when enabled. If it is unavailable, contact the project through its published repository contact channels without sending real secrets. Never post recovery phrases, keys, RPC API tokens, personal signed transactions or wallet exports in public issues. Reproduce with public test fixtures only. No reporting SLA or bounty is promised.
 
-1. Review lockfile changes, upstream ownership, licenses and deprecations.
-2. Install with `npm ci --ignore-scripts`; verify npm signatures/attestations and
-   run `npm audit` across both runtime and build dependencies.
-3. Rebuild vendored code; check `VENDOR_SHA256.json` and review every change.
-4. Run unit, DOM and native integration tests with synthetic wallets and nodes.
-5. Rebuild the installer in a clean environment, verify its embedded ASAR/fuses,
-   and publish hashes plus the exact matching source commit and tool versions.
-6. Independently review the code and test a real Ledger/Windows setup before
-   removing the experimental status. Do not claim full binary reproducibility
-   unless two independent builds have actually been compared.
+## Intended boundaries
 
-Renderer/network boundary:
+- The renderer and short-lived derivation/signing workers use sandbox, context isolation, local scripts and `connect-src 'none'`; a request filter permits local application files. Main-process IPC validates the sender and public fields.
+- Native confirmation is required for a new RPC URL and first use of optional metadata providers. Optional USD prices, indexed activity and discovery start off. Providers see public data and may correlate it or lie.
+- Software signing requires the application offline mode; use a trusted physically disconnected computer as well. Only explicit Ethereum-mainnet EIP-1559 ETH/ERC20 transfers with existing fee/gas limits are supported. No approvals, arbitrary calls or message signing.
+- Ledger confirmations and the device screen remain required for signing. Trezor/BitBox02 are experimental address readers only, not signing paths. PINs are entered on the device.
 
-- Seeds, passphrases and private keys only exist in the sandboxed renderer and
-  its short-lived workers, which have no network access (CSP `connect-src 'none'`
-  and a session-wide request filter allowing only local application files).
-- The main process performs all network calls. Every RPC URL it receives from the
-  renderer must first be confirmed by the user in a native dialog, so tampered
-  renderer code cannot encode a secret into an attacker-controlled URL.
-- "Offline mode" is an application-level network block, not an air gap. For
-  signing with a typed seed, use a computer that is physically disconnected.
+These are defenses, not proof of complete isolation. A compromised dependency, renderer, OS or unsigned executable can defeat them. In particular, a malicious renderer may encode private data into apparently valid public requests. JavaScript cannot guarantee RAM or external clipboard-history erasure. A simulation cannot guarantee future execution. Treat signed exports as authorizations and public exports as privacy-sensitive.
 
-Remaining boundaries:
+## Release checks
 
-- RPCs, token contracts and price/history services can lie, fail, or correlate
-  public addresses. A successful simulation cannot guarantee future execution.
-- Computer malware can observe local secrets or replace an unsigned program.
-- Ledger WebHID package 6.36.0 is deprecated/unmaintained upstream. No currently
-  reported vulnerability is assumed to make it trustworthy. A migration to the
-  newer official device SDK requires separate protocol and physical-device tests.
-- Some transitive build packages are deprecated. Updates must be reviewed and
-  exercised by actual build tests rather than applied with a blind audit fix.
-- JavaScript does not guarantee physical secret-memory or clipboard erasure.
-- A public donation address can expose links to other transactions or identities.
-- Checksums, npm signatures and registry attestations establish provenance or
-  consistency, not that the upstream publisher or code is uncompromised.
+Pinned dependencies/actions, registry signature verification, `npm audit`, vendor rebuild checks, tests, native packaging and installed-payload comparison run before a tagged public release. Native builds preserve Electron fuses and sandbox protections. Windows/macOS support embedded ASAR validation; Linux Electron does not.
+
+Downloads include checksums, source metadata, SBOM and GitHub/Sigstore build provenance. These do not replace an independent audit or publisher certificates. Windows is currently unsigned Authenticode; Mac signing is ad hoc, without notarization. Physical wallet testing and an independent reproducibility comparison remain outstanding.
+
+The legacy Ledger WebHID library is deprecated upstream; no absence of known CVEs makes it safe. Migrating to a newer SDK requires separately reviewed protocol and physical-device tests. Dependency updates should not be applied with a blind audit fix.
+
+See [verification instructions](docs/VERIFY.md), [upstream notices](THIRD_PARTY_NOTICES.md) and the release's exact workflow/commit.
