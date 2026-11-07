@@ -101,7 +101,8 @@
           "Name": "Quick Ethereum Wallet Explorer",
           "Comment": "Ethereum Wallet Analysis & Offline Signing Tool"
         }
-      }
+      },
+      "syncDesktopName": true
     },
     "mac": {
       "target": [
@@ -127,5 +128,6 @@
   "engines": {
     "node": ">=24 <25"
   },
-  "homepage": "https://github.com/qeweproject/QEWE"
+  "homepage": "https://github.com/qeweproject/QEWE",
+  "desktopName": "qewe.desktop"
 }

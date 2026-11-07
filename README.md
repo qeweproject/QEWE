@@ -135,15 +135,10 @@ npm run build:linux        # Debian/Ubuntu .deb (amd64)
 npm run build:mac          # dmg (Intel and Apple Silicon, ad-hoc signed)
 ```
 
-Candidate installers are built by `.github/workflows/release.yml` with SHA256 checks and private test artifacts. No public release is automatically published. See
+Candidate installers are built by `.github/workflows/release.yml` with SHA256 checks and private test artifacts. Public version-tag builds also attach GitHub provenance attestations in a separate job; private candidates retain read-only build tokens. No public release is automatically published. See
 [docs/RELEASING.md](docs/RELEASING.md) for code signing.
 
-Linux note: Electron's sandbox needs unprivileged user namespaces. Some
-distributions (Ubuntu 24.04+) restrict them for AppImages through AppArmor; do
-not work around this with `--no-sandbox`. Use a distribution profile that allows
-the AppImage, or build from source.
-
-Output goes to `../deliverables`. The builder uses the pinned official Electron
+Linux packages use the standard scoped AppArmor profile for Ubuntu 24.04+ and retain the Chromium sandbox. Do not disable global AppArmor/user-namespace restrictions or add sandbox-disabling launch flags. Output goes to `../deliverables`. The builder uses the pinned official Electron
 runtime and NSIS tooling, which may be downloaded over HTTPS during building.
 No certificate is included. The installer is per-user and provides desktop and
 Start menu shortcuts. Existing application installation identity is preserved.
