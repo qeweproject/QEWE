@@ -1,0 +1,4 @@
+npm audit signatures
+335 installed packages have verified registry signatures.
+49 packages have verified attestations.
+Checked using npm 11.9.0; no claim of independent code review.
