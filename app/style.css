@@ -43,3 +43,4 @@ body{user-select:text;-webkit-user-select:text}button,summary,label.check{user-s
 .network-rpc{display:grid;grid-template-columns:9rem 1fr;align-items:center;gap:.5rem;font-size:.9em}
 .extra-modes{margin-top:.5rem}
 .discovered>div{white-space:pre-line;font-size:.85em;word-break:break-all}
+.keystore-fields label{display:block;margin-top:12px}.keystore-fields #keystore-name{margin-left:10px}
