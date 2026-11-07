@@ -7,7 +7,7 @@ function unsignedEnvelope(p){C.validatePlan(p);return {format:UNSIGNED,from:E.ge
 function decode(input){
  keys(input,['format','from','path','asset','unsigned']);if(input.format!==UNSIGNED)throw Error('Format de transaction non signé inconnu.');
  const from=E.getAddress(input.from),d=C.inspect(input.unsigned,input.asset);
- const p={from,path:input.path,asset:d.asset.id,unsigned:input.unsigned,recipient:d.recipient,recipientPath:null,units:d.units.toString(),amount:E.formatUnits(d.units,d.asset.decimals),symbol:d.asset.symbol,decimals:d.asset.decimals,nonce:d.tx.nonce,gasLimit:d.tx.gasLimit.toString(),maxFeePerGas:d.tx.maxFeePerGas.toString(),maxPriorityFeePerGas:d.tx.maxPriorityFeePerGas.toString(),feeCapWei:d.feeCap.toString()};C.validatePlan(p);return p;
+ const p={from,path:input.path,asset:d.asset.id,unsigned:d.tx.unsignedSerialized,recipient:d.recipient,recipientPath:null,units:d.units.toString(),amount:E.formatUnits(d.units,d.asset.decimals),symbol:d.asset.symbol,decimals:d.asset.decimals,nonce:d.tx.nonce,gasLimit:d.tx.gasLimit.toString(),maxFeePerGas:d.tx.maxFeePerGas.toString(),maxPriorityFeePerGas:d.tx.maxPriorityFeePerGas.toString(),feeCapWei:d.feeCap.toString()};C.validatePlan(p);return p;
 }
 class OfflineManager{
  constructor(options={}){this.options=options;this.validator=new TransferManager(options);this.plans=new Map();this.attempts=new Map();}

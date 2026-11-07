@@ -1,0 +1,44 @@
+# Windows installer build with GitHub build-provenance attestation, on version
+# tags only. Source checks stay in checks.yml. Pin every remaining action
+# (attest-build-provenance, upload-artifact) to a full commit SHA, like checkout
+# and setup-node, before the first release.
+name: Release build
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: read
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write       # Sigstore signing of the attestation
+      attestations: write   # GitHub build provenance
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts
+      - run: npm audit signatures
+      - run: npm run verify:vendor
+      - run: npm test
+      - run: node node_modules/electron/install.js
+      - run: node node_modules/esbuild/install.js
+      - run: npm run build
+      - run: npm run verify:release
+      - name: SHA256 of the installer
+        shell: pwsh
+        run: Get-FileHash ../deliverables/*.exe -Algorithm SHA256 | Format-List
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ../deliverables/*.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer
+          path: ../deliverables/*.exe
+          if-no-files-found: error

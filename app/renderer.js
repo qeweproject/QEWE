@@ -88,6 +88,8 @@ async function reset(){
 }
 $('phrase').addEventListener('input',()=>{$('words').textContent=`${$('phrase').value.trim().split(/\s+/).filter(Boolean).length} mots`;});
 $('phrase').addEventListener('paste',event=>{const text=event.clipboardData?.getData('text/plain');if(text){event.preventDefault();const input=$('phrase');input.setRangeText(text.replace(/[\r\n\t]+/gu,' '),input.selectionStart,input.selectionEnd,'end');input.dispatchEvent(new Event('input'));}});
+// Security: a pasted seed/passphrase must not linger in the clipboard (Windows clipboard history, sync, other apps).
+for(const id of ['phrase','password'])$(id).addEventListener('paste',()=>setTimeout(()=>desktop.clearClipboard?.().catch(()=>{}),0));
 $('show').addEventListener('change',()=>{$('phrase').type=$('show').checked?'text':'password';});
 window.addEventListener('blur',()=>{$('show').checked=false;$('phrase').type='password';});
 $('clear').addEventListener('click',async()=>{await reset();status('Adresses et champs secrets effacés de l’interface.');});

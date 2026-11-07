@@ -13,7 +13,29 @@ app.commandLine.appendSwitch('disable-breakpad');
 let win,controller=null,results={},currentRows=[],block='',ledgerAllowed=false;
 const entry=pathToFileURL(path.join(__dirname,'index.html')).href;
 function trusted(event){if(event.sender!==win?.webContents||event.senderFrame!==win?.webContents.mainFrame||event.senderFrame?.url!==entry)throw Error('Origine refusée.');}
+// Security: only one instance may hold Ledger/HID and session secrets.
+const singleInstance=app.requestSingleInstanceLock();if(!singleInstance)app.quit();
+app.on('second-instance',()=>{if(win&&!win.isDestroyed()){if(win.isMinimized())win.restore();win.focus();}});
+// Security: defense in depth for any WebContents (future windows, dialogs, devtools).
+app.on('web-contents-created',(_event,contents)=>{contents.setWindowOpenHandler(()=>({action:'deny'}));contents.on('will-navigate',e=>e.preventDefault());contents.on('will-redirect',e=>e.preventDefault());contents.on('will-attach-webview',e=>e.preventDefault());});
+// Security: the renderer handles seeds; the main process is the only one allowed to reach the network.
+// A compromised renderer (e.g. tampered vendored code) could otherwise smuggle a secret inside an RPC URL.
+// Every new RPC URL must therefore be confirmed by the user in a native dialog the renderer cannot drive.
+const approvedEndpoints=new Set([endpointUrl('https://ethereum-rpc.publicnode.com')]);let approving=false;
+async function approveEndpoint(value){
+  const href=endpointUrl(value);if(approvedEndpoints.has(href))return href;
+  if(!win||win.isDestroyed())throw Error('Fenêtre indisponible.');
+  if(approving)throw Error('Une confirmation de serveur RPC est déjà ouverte.');
+  approving=true;
+  try{
+    const u=new URL(href);
+    const {response}=await dialog.showMessageBox(win,{type:'warning',title:'Autoriser ce serveur RPC ?',message:'Autoriser QEWE à contacter ce serveur RPC pendant cette session ?',detail:`Hôte : ${u.host}\n\nURL complète envoyée :\n${href}\n\nElle doit correspondre exactement à l’URL que vous avez saisie. Refusez si elle contient un hôte, des mots ou une longue suite de caractères inattendus.`,buttons:['Refuser','Autoriser'],defaultId:0,cancelId:0,noLink:true});
+    if(response!==1)throw Error('Serveur RPC refusé. Aucun appel réseau effectué.');
+    approvedEndpoints.add(href);return href;
+  }finally{approving=false;}
+}
 app.whenReady().then(async()=>{
+  if(!singleInstance)return;
 
   preferences=new Preferences(app.getPath('userData'),{fetcher:appFetch});const preferencesReady=preferences.load();
   const isolated=session.fromPartition('ethereum-ephemeral');
@@ -32,6 +54,8 @@ app.whenReady().then(async()=>{
   isolated.on('will-download',event=>event.preventDefault());
   win=new BrowserWindow({width:1320,height:960,minWidth:960,minHeight:720,backgroundColor:'#0a0c0e',title:'Quick Ethereum Wallet Explorer',webPreferences:{preload:path.join(__dirname,'preload.cjs'),session:isolated,contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true,devTools:false,spellcheck:false}});
   win.setMenu(null);
+  // Security: exclude the window from screenshots, screen sharing and recording (Windows/macOS).
+  win.setContentProtection(true);
   win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   win.webContents.on('will-navigate',e=>e.preventDefault());
   win.webContents.on('will-attach-webview',event=>event.preventDefault());
@@ -54,6 +78,7 @@ app.whenReady().then(async()=>{
 
   win.on('closed',()=>{ledgerAllowed=false;controller?.abort();transferWork?.abort();transfers.clear();offline.clear();controller=null;win=null;});
   ipcMain.handle('ledger-begin',e=>{trusted(e);if(controller||transferWork||ledgerAllowed)return false;ledgerAllowed=true;return true;});
+  ipcMain.handle('clear-clipboard',e=>{trusted(e);clipboard.clear();return true;});
   ipcMain.handle('ledger-end',e=>{trusted(e);ledgerAllowed=false;return true;});
   ipcMain.handle('ledger-register',(e,rows)=>{trusted(e);if(!ledgerAllowed)throw Error('Lecture Ledger requise.');return {count:transfers.register(rows)};});
   ipcMain.handle('transfer-assets',async e=>{trusted(e);await preferencesReady;return preferences.catalog();});
@@ -68,24 +93,24 @@ app.whenReady().then(async()=>{
   ipcMain.handle('ui-language',async(e,lang)=>{trusted(e);await preferencesReady;return preferences.language(lang);});
   ipcMain.handle('token-settings',(e,request)=>transferTask(e,'tokens',async signal=>{
     transfers.invalidate();
-    if(request.action==='add')return preferences.add(request.address,request.endpoint,signal);
+    if(request.action==='add')return preferences.add(request.address,await approveEndpoint(request.endpoint),signal);
     if(request.action==='select')return preferences.selection(request.address,request.kind,request.enabled);
     if(request.action==='remove')return preferences.remove(request.address);
     if(request.action==='defaults')return preferences.defaults();
     throw Error('Action ERC20 invalide.');
   }));
   ipcMain.handle('offline-mode',(e,enabled)=>{trusted(e);if(typeof enabled!=='boolean'||controller||transferWork||ledgerAllowed||offline.isSigning())return {error:'Une opération est déjà en cours.'};offlineOnly=enabled;return {enabled:offlineOnly};});
-  ipcMain.handle('offline-prepare',(e,request)=>transferTask(e,'offline-prepare',signal=>offline.prepare(request,signal)));
+  ipcMain.handle('offline-prepare',(e,request)=>transferTask(e,'offline-prepare',async signal=>offline.prepare({...request,endpoint:await approveEndpoint(request?.endpoint)},signal)));
   ipcMain.handle('offline-read',(e,text)=>transferTask(e,'offline-read',()=>offline.read(text)));
   ipcMain.handle('offline-start',(e,{id})=>transferTask(e,'offline-start',()=>{if(!offlineOnly)throw Error('Activez le mode hors ligne avant la signature.');return offline.start(id);}));
   ipcMain.handle('offline-complete',(e,{id,serialized})=>transferTask(e,'offline-complete',()=>{if(!offlineOnly)throw Error('Mode hors ligne requis.');return offline.complete(id,serialized);}));
   ipcMain.handle('offline-cancel',(e,{id})=>{trusted(e);offline.cancel(id);return {ok:true};});
-  ipcMain.handle('offline-broadcast',(e,{id,endpoint})=>transferTask(e,'offline-broadcast',signal=>offline.broadcast(id,endpoint,signal)));
+  ipcMain.handle('offline-broadcast',(e,{id,endpoint})=>transferTask(e,'offline-broadcast',async signal=>offline.broadcast(id,await approveEndpoint(endpoint),signal)));
   ipcMain.handle('offline-export',(e,{kind,id})=>transferTask(e,'offline-export',async()=>{
     const value=kind==='unsigned'?unsignedEnvelope(transfers.plan(id,['prepared'])):kind==='signed'?offline.export(id):kind==='offline-unsigned'?offline.unsigned(id):null;if(!value)throw Error('Format inconnu.');
     const {canceled,filePath}=await dialog.showSaveDialog(win,{title:kind!=='signed'?'Exporter la transaction non signée':'Exporter la transaction signée',defaultPath:kind!=='signed'?'QBE_transaction_non_signee.json':'QBE_transaction_signee.json',filters:[{name:'JSON',extensions:['json']}]});if(canceled)return {cancelled:true};await fs.writeFile(filePath,JSON.stringify(value,null,2),{encoding:'utf8',mode:0o600});return {ok:true};
   }));
-  ipcMain.handle('transfer-prepare',(e,request)=>transferTask(e,'prepare',signal=>transfers.prepare(request,signal)));
+  ipcMain.handle('transfer-prepare',(e,request)=>transferTask(e,'prepare',async signal=>{transfers.source(request?.from,request?.path);return transfers.prepare({...request,endpoint:await approveEndpoint(request?.endpoint)},signal);}));
   ipcMain.handle('transfer-start',(e,{id})=>transferTask(e,'start',signal=>transfers.start(id,signal)));
   ipcMain.handle('transfer-broadcast',(e,{id,serialized})=>transferTask(e,'broadcast',signal=>transfers.broadcast(id,serialized,signal)));
   ipcMain.handle('transfer-status',(e,{id})=>transferTask(e,'status',signal=>transfers.status(id,signal)));
@@ -94,8 +119,10 @@ app.whenReady().then(async()=>{
   ipcMain.handle('scan',async(e,request)=>{
     trusted(e);if(offlineOnly)return {error:'Mode hors ligne actif : appels réseau bloqués.'};
     if(controller||transferWork||ledgerAllowed)return {error:'Une lecture Ledger ou un contrôle est déjà en cours.'};
+    let endpoint;try{endpoint=await approveEndpoint(request?.endpoint);}catch(err){return {error:err.message||'URL RPC invalide.'};}
+    if(controller||transferWork||ledgerAllowed||offlineOnly)return {error:'Une lecture Ledger ou un contrôle est déjà en cours.'};
     try{
-      const endpoint=endpointUrl(request.endpoint),rows=validateRows(request.rows),tokens=tokenAddresses(request.tokens),history=request.history===true,usd=request.usd===true;
+      const rows=validateRows(request.rows),tokens=tokenAddresses(request.tokens),history=request.history===true,usd=request.usd===true;
       results={};currentRows=rows;block='';controller=new AbortController();const active=controller;
       const emit=message=>{
         if(message.type==='start')block=message.block;
