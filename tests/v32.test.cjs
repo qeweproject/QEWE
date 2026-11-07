@@ -103,3 +103,16 @@ test('Encrypted JSON keystores open with their password, read-only and usable fo
   const signed=signOffline(json,'correct horse','auto',{format:'keystore',iterations:2048},plan);
   assert.equal(C.verifySigned(plan,signed.serialized).hash,signed.hash);
 });
+
+test('Gap limit still stops when a token cannot be read or the USD estimate is partial (regression)',async()=>{
+  const rows=derive(phrase,'','en',['standard'],()=>{},'',30);
+  const f=async(url,o)=>{const b=JSON.parse(o.body);
+    if(b.method==='eth_call')return json({jsonrpc:'2.0',id:b.id,error:{code:3,message:'revert'}});
+    return json({jsonrpc:'2.0',id:b.id,result:b.method==='eth_chainId'?'0x1':b.method==='eth_blockNumber'?'0x10':'0x0'});};
+  const events=[];await scan({endpoint:'https://ethereum-rpc.publicnode.com',rows,tokens:['0x1111111111111111111111111111111111111111'],gap:5},signal(),e=>events.push(e),f);
+  const results=events.filter(e=>e.type==='result');
+  assert.equal(results[0].result.status,'partial');assert.equal(results.length,5);
+  assert.equal(events.filter(e=>e.type==='skipped').reduce((n,e)=>n+e.addresses.length,0),25);
+  // An address whose ETH balance itself is unknown is never treated as empty.
+  assert.equal(used({wei:null,nonce:'0',tokens:[]}),true);assert.equal(used({wei:'0',nonce:'0',tokens:[{raw:null,status:'error'}],status:'partial'}),false);
+});
