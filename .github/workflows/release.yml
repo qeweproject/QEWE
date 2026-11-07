@@ -56,7 +56,9 @@ jobs:
           mkdir -p release-files
           cp ../deliverables/${{ matrix.file }} release-files/
           cd release-files && (sha256sum * 2>/dev/null || shasum -a 256 *)
-      - uses: actions/attest-build-provenance@v2
+      # Attestations need a public repository (or GitHub Enterprise Cloud for private ones).
+      - if: ${{ !github.event.repository.private }}
+        uses: actions/attest-build-provenance@v2
         with:
           subject-path: release-files/*
       - uses: actions/upload-artifact@v4
