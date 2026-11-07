@@ -1,8 +1,10 @@
 # QEWE — Quick Ethereum Wallet Explorer
 
+<img src="app/qewe.png" width="96" alt="QEWE logo">
+
 **Ethereum Wallet Analysis & Offline Signing Tool**
 
-Desktop utility (Windows 11 x64; Linux and macOS builds in preparation) that finds
+Desktop utility (Windows 10/11 x64, Ubuntu LTS amd64, macOS Intel and Apple Silicon packages) that finds
 forgotten Ethereum funds. Ledger USB comes first: read public addresses across
 Ledger Live, Legacy, BIP44, historical MEW and custom paths, inspect ETH/ERC20
 balances on Ethereum and native balances on major EVM networks, and prepare
@@ -12,7 +14,7 @@ to the explicit offline transaction flow.
 
 ## Status
 
-Version 3.1.0 is a security-hardening candidate, not an independently audited
+Version 3.2.0-rc.1 is a security-hardening candidate, not an independently audited
 wallet. Automated tests use published test wallets, mock Ethereum nodes and a
 simulated Ledger. No physical Ledger or Windows 11 execution test has been
 performed by the build environment. Do not describe this as certified or safe
@@ -129,12 +131,11 @@ be added to make a test pass.
 ```sh
 npm run build              # Windows NSIS installer
 npm run verify:release     # or: verify:release -- linux / -- mac
-npm run build:linux        # AppImage (x64)
-npm run build:mac          # dmg (Apple Silicon, ad-hoc signed)
+npm run build:linux        # Debian/Ubuntu .deb (amd64)
+npm run build:mac          # dmg (Intel and Apple Silicon, ad-hoc signed)
 ```
 
-Tagged releases are built by `.github/workflows/release.yml` on all three
-platforms with SHA256 sums and GitHub build-provenance attestations. See
+Candidate installers are built by `.github/workflows/release.yml` with SHA256 checks and private test artifacts. No public release is automatically published. See
 [docs/RELEASING.md](docs/RELEASING.md) for code signing.
 
 Linux note: Electron's sandbox needs unprivileged user namespaces. Some
@@ -172,3 +173,7 @@ address is not imposed by this MIT license. Please distinguish forks clearly.
 Security reports: after publication, use GitHub private vulnerability reporting
 if enabled by the repository maintainer. Never post real recovery phrases,
 private keys, signed transactions or account credentials in issues.
+
+## Release candidate review
+
+See `REVIEW_3.2_RC1.md` for the security corrections and test limits. No independent audit or physical hardware certification is claimed. macOS packages have ad-hoc test signatures, not Apple Developer ID notarization. Windows 10 compatibility does not extend Microsoft security support; use a supported, updated OS.

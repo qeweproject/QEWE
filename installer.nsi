@@ -2,6 +2,7 @@
 Unicode true
 !include "MUI2.nsh"
 !include "x64.nsh"
+!include "WinVer.nsh"
 Name "Quick Ethereum Wallet Explorer"
 RequestExecutionLevel user
 InstallDir "$LOCALAPPDATA\Programs\EthereumAdresses"
@@ -11,7 +12,7 @@ SetCompress auto
 BrandingText "Quick Ethereum Wallet Explorer · Ledger"
 !define MUI_ABORTWARNING
 !define MUI_WELCOMEPAGE_TITLE "Install Quick Ethereum Wallet Explorer"
-!define MUI_WELCOMEPAGE_TEXT "QEWE - Ethereum Wallet Analysis & Offline Signing Tool.$\r$\n$\r$\nWindows 11, 64-bit. No additional runtime download is needed.$\r$\n$\r$\nDesktop and Start menu shortcuts will be created."
+!define MUI_WELCOMEPAGE_TEXT "QEWE - Ethereum Wallet Analysis & Offline Signing Tool.$\r$\n$\r$\nWindows 10/11, 64-bit. No additional runtime download is needed.$\r$\n$\r$\nDesktop and Start menu shortcuts will be created."
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_INSTFILES
 !define MUI_FINISHPAGE_RUN "$INSTDIR\Quick Ethereum Wallet Explorer.exe"
@@ -21,6 +22,10 @@ BrandingText "Quick Ethereum Wallet Explorer · Ledger"
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_LANGUAGE "English"
 Function .onInit
+  ${IfNot} ${AtLeastWin10}
+    MessageBox MB_ICONSTOP "Windows 10 or newer is required."
+    Abort
+  ${EndIf}
   ${IfNot} ${RunningX64}
     MessageBox MB_ICONSTOP "This application requires 64-bit Windows."
     Abort
@@ -39,7 +44,7 @@ Section "Installation"
   RMDir /r "$SMPROGRAMS\Quick Ethereum Balance Explorer"
   Delete "$INSTDIR\Quick Ethereum Balance Explorer.exe"
   SetOutPath "$INSTDIR"
-  File /r "${PROJECT_DIR}\..\deliverables\win-unpacked\*"
+  File /r "${PROJECT_DIR}/../deliverables/win-unpacked/*"
   WriteUninstaller "$INSTDIR\Desinstaller.exe"
   CreateShortCut "$DESKTOP\Quick Ethereum Wallet Explorer.lnk" "$INSTDIR\Quick Ethereum Wallet Explorer.exe"
   CreateDirectory "$SMPROGRAMS\Quick Ethereum Wallet Explorer"
@@ -47,7 +52,7 @@ Section "Installation"
   CreateShortCut "$SMPROGRAMS\Quick Ethereum Wallet Explorer\Désinstaller.lnk" "$INSTDIR\Desinstaller.exe"
   WriteRegStr HKCU "Software\EthereumAdresses" "InstallDir" "$INSTDIR"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EthereumAdresses" "DisplayName" "Quick Ethereum Wallet Explorer"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EthereumAdresses" "DisplayVersion" "3.1.0"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EthereumAdresses" "DisplayVersion" "${VERSION}"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EthereumAdresses" "UninstallString" '$\"$INSTDIR\Desinstaller.exe$\"'
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EthereumAdresses" "DisplayIcon" "$INSTDIR\Quick Ethereum Wallet Explorer.exe"
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EthereumAdresses" "NoModify" 1
