@@ -1,0 +1,14 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs/promises'),os=require('node:os'),path=require('node:path'),E=require('ethers');
+const {Preferences}=require('../app/preferences.cjs'),{TransferManager}=require('../app/transfers.cjs'),C=require('../app/transfer-codec.js'),P=require('../app/token-presets.js'),S=require('../app/vendor/ledger-tokens.json'),F=require('./transfer-fixture.cjs');
+const custom=Object.values(S).find(t=>!P.some(p=>p.address.toLowerCase()===t.address.toLowerCase())),ABI=new E.Interface(['function symbol() view returns(string)','function decimals() view returns(uint8)']);
+test('ERC20 defaults are unchanged, settings and language persist without wallet data, custom signed tokens can be enabled',async()=>{
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'eth-prefs-')),net=F.network();
+ const fetcher=async(url,options)=>{const q=JSON.parse(options.body);if(q.method==='eth_call'&&q.params[0].to.toLowerCase()===custom.address.toLowerCase()&&['0x95d89b41','0x313ce567'].includes(q.params[0].data)){const method=q.params[0].data==='0x95d89b41'?'symbol':'decimals';return {ok:true,text:async()=>JSON.stringify({id:q.id,result:ABI.encodeFunctionResult(method,[method==='symbol'?custom.symbol:custom.decimals])})};}return net.fetcher(url,options);};
+ try{const prefs=new Preferences(dir,{fetcher});await prefs.load();assert.equal(prefs.state().tokens.length,25);assert.equal(prefs.state().tokens.filter(t=>t.scan).length,25);assert.equal(prefs.catalog().length,20);
+  await prefs.add(custom.address,'https://rpc.example.org',new AbortController().signal);assert.equal(prefs.state().tokens.length,26);assert(prefs.catalog().some(t=>t.id===custom.address));assert.equal(C.asset(custom.address).symbol,custom.symbol);
+  await prefs.selection(custom.address,'transfer',false);assert(!prefs.catalog().some(t=>t.id===custom.address));await prefs.language('hi');const second=new Preferences(dir);await second.load();assert.equal(second.lang,'hi');assert.equal(second.state().tokens.length,26);assert.equal(second.state().tokens.at(-1).transfer,false);
+  const raw=await fs.readFile(prefs.file,'utf8');assert(!raw.includes(F.wallet.address));assert(!raw.includes(F.phrase));assert(!raw.includes('unsigned'));
+  const manager=new TransferManager({fetcher,allowedAssets:()=>prefs.catalog()});manager.register(F.source);await assert.rejects(manager.prepare({...F.request,asset:custom.address},new AbortController().signal),/activé/);
+  await prefs.remove(custom.address);assert.equal(prefs.state().tokens.length,25);await prefs.selection(P[0].address,'scan',false);await prefs.defaults();assert.equal(prefs.state().tokens.filter(t=>t.scan).length,25);assert.equal(prefs.catalog().length,20);
+ }finally{await fs.rm(dir,{recursive:true,force:true});}
+});

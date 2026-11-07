@@ -1,0 +1,301 @@
+{
+  "provenance": "bip_utils 2.12.3 (9 languages, 5 lengths); Japanese published TREZOR vectors: https://github.com/trezor/python-mnemonic/blob/master/vectors.json; custom PBKDF2 via Python hashlib, ETH addresses via bip_utils. All synthetic public fixtures, never use for funds.",
+  "vectors": [
+    {
+      "language": "en",
+      "phrase": "abandon amount liar amount expire adjust cage candy arch gather drum buyer",
+      "password": "TREZOR",
+      "address": "0x3822A135771714BDbfe9f2DE84589F5A43e4561a"
+    },
+    {
+      "language": "en",
+      "phrase": "abandon amount liar amount expire adjust cage candy arch gather drum bullet absurd math exhibit",
+      "password": "TREZOR",
+      "address": "0x4be3b91c3AeDbAcAF9fF45C60C3759ba7001E669"
+    },
+    {
+      "language": "en",
+      "phrase": "abandon amount liar amount expire adjust cage candy arch gather drum bullet absurd math era live bid rib",
+      "password": "TREZOR",
+      "address": "0x165e6A4f63960FE54c236434a80eCBa24AEa4CA7"
+    },
+    {
+      "language": "en",
+      "phrase": "abandon amount liar amount expire adjust cage candy arch gather drum bullet absurd math era live bid rhythm alien crouch saddle",
+      "password": "TREZOR",
+      "address": "0x8d708D10D85cd780CB920fAc3a31bc11E17c48A4"
+    },
+    {
+      "language": "en",
+      "phrase": "abandon amount liar amount expire adjust cage candy arch gather drum bullet absurd math era live bid rhythm alien crouch range attend journey unaware",
+      "password": "TREZOR",
+      "address": "0xf5E74A1283136330E3Bc545Faf99CD2463E3c9dD"
+    },
+    {
+      "language": "fr",
+      "phrase": "abaisser agréable inductif agréable éligible achat bolide boucle amateur exister dérober bloquer",
+      "password": "TREZOR",
+      "address": "0x478Eb4A66f6a940c2001D3d2E9f083f152f43e72"
+    },
+    {
+      "language": "fr",
+      "phrase": "abaisser agréable inductif agréable éligible achat bolide boucle amateur exister dérober bison abrasif justice éjecter",
+      "password": "TREZOR",
+      "address": "0x30BDaDbBD4114a3e448BAb85558FFCb410B33308"
+    },
+    {
+      "language": "fr",
+      "phrase": "abaisser agréable inductif agréable éligible achat bolide boucle amateur exister dérober bison abrasif justice écharpe inonder avancer pictural",
+      "password": "TREZOR",
+      "address": "0x1B2C0Eda02A2107953cE09F0552b339a34e0D8b7"
+    },
+    {
+      "language": "fr",
+      "phrase": "abaisser agréable inductif agréable éligible achat bolide boucle amateur exister dérober bison abrasif justice écharpe inonder avancer piano adulte cobra pommade",
+      "password": "TREZOR",
+      "address": "0xDa425306492FcAdB5e8345Fe43062878fA4fE353"
+    },
+    {
+      "language": "fr",
+      "phrase": "abaisser agréable inductif agréable éligible achat bolide boucle amateur exister dérober bison abrasif justice écharpe inonder avancer piano adulte cobra papaye anonyme hangar tomate",
+      "password": "TREZOR",
+      "address": "0x3034e36be5BaFFbd67245F518DDa745f8EC0F484"
+    },
+    {
+      "language": "es",
+      "phrase": "ábaco álbum líquido álbum espuma acudir bolero bosque amante gaita dictar boca",
+      "password": "TREZOR",
+      "address": "0xFA137FE41d285Ee1018E6c38d94C37DcD9C93f5D"
+    },
+    {
+      "language": "es",
+      "phrase": "ábaco álbum líquido álbum espuma acudir bolero bosque amante gaita dictar bestia abrir marco esencia",
+      "password": "TREZOR",
+      "address": "0xa5ba767C0D7FB6150DD0Cd56F046d7d21C9Fec70"
+    },
+    {
+      "language": "es",
+      "phrase": "ábaco álbum líquido álbum espuma acudir bolero bosque amante gaita dictar bestia abrir marco encargo lluvia atar portal",
+      "password": "TREZOR",
+      "address": "0xbAEa44CCA9Ac73FA129dD9AE4124875a80c43A5a"
+    },
+    {
+      "language": "es",
+      "phrase": "ábaco álbum líquido álbum espuma acudir bolero bosque amante gaita dictar bestia abrir marco encargo lluvia atar porción agudo clínica pulir",
+      "password": "TREZOR",
+      "address": "0xB61aCA1b2498a1b5F1B357207B67A7F1673fE453"
+    },
+    {
+      "language": "es",
+      "phrase": "ábaco álbum líquido álbum espuma acudir bolero bosque amante gaita dictar bestia abrir marco encargo lluvia atar porción agudo clínica pesca anuncio justo tóxico",
+      "password": "TREZOR",
+      "address": "0x89D6DAf521F36190d929FF00f0DFcC682fabeBa2"
+    },
+    {
+      "language": "it",
+      "phrase": "abaco alogeno mitigare alogeno fenomeno affetto bravura bronzina ampio gonfio elaborato bottino",
+      "password": "TREZOR",
+      "address": "0x1f4a7Aa45549E12252E700beB681fEBaa7F41A43"
+    },
+    {
+      "language": "it",
+      "phrase": "abaco alogeno mitigare alogeno fenomeno affetto bravura bronzina ampio gonfio elaborato bisonte accadere nessuno fecola",
+      "password": "TREZOR",
+      "address": "0xF3154fd23F8b798983EC73Ba3F43E9Bc4C48E4B8"
+    },
+    {
+      "language": "it",
+      "phrase": "abaco alogeno mitigare alogeno fenomeno affetto bravura bronzina ampio gonfio elaborato bisonte accadere nessuno europa monile autunno riso",
+      "password": "TREZOR",
+      "address": "0xFCC88f24Fa5D426D7c05F879076F30f8c413703D"
+    },
+    {
+      "language": "it",
+      "phrase": "abaco alogeno mitigare alogeno fenomeno affetto bravura bronzina ampio gonfio elaborato bisonte accadere nessuno europa monile autunno risibile alce criceto rumoroso",
+      "password": "TREZOR",
+      "address": "0x45A2E925a6Cb741239Bb01060f2243fC049C92f9"
+    },
+    {
+      "language": "it",
+      "phrase": "abaco alogeno mitigare alogeno fenomeno affetto bravura bronzina ampio gonfio elaborato bisonte accadere nessuno europa monile autunno risibile alce criceto renna apparire mana trincea",
+      "password": "TREZOR",
+      "address": "0xD40C0196d0377d90f04852e63b2359003ABB6450"
+    },
+    {
+      "language": "pt",
+      "phrase": "abacate afivelar inativo afivelar donzela achatar barulho beber albergue exalar cuidado banir",
+      "password": "TREZOR",
+      "address": "0xd75b23b863A96d90Bf7B54d13620AbEa82174Ea5"
+    },
+    {
+      "language": "pt",
+      "phrase": "abacate afivelar inativo afivelar donzela achatar barulho beber albergue exalar cuidado baioneta abotoar joia divulgar",
+      "password": "TREZOR",
+      "address": "0xDf5640c202B33acdF6d4F495B63220fe996F8711"
+    },
+    {
+      "language": "pt",
+      "phrase": "abacate afivelar inativo afivelar donzela achatar barulho beber albergue exalar cuidado baioneta abotoar joia dever informal argola penhasco",
+      "password": "TREZOR",
+      "address": "0x220fB438EF3C8fE8cAa9663587D91351abFE925E"
+    },
+    {
+      "language": "pt",
+      "phrase": "abacate afivelar inativo afivelar donzela achatar barulho beber albergue exalar cuidado baioneta abotoar joia dever informal argola peneira aditivo celebrar pivete",
+      "password": "TREZOR",
+      "address": "0x37c9457Ee0dc469443955CA4dE470FF73232b6fb"
+    },
+    {
+      "language": "pt",
+      "phrase": "abacate afivelar inativo afivelar donzela achatar barulho beber albergue exalar cuidado baioneta abotoar joia dever informal argola peneira aditivo celebrar ouvido amarelo gritaria toalha",
+      "password": "TREZOR",
+      "address": "0xC8792d8275c48724b6b336956Efffa926Fe1d93c"
+    },
+    {
+      "language": "ko",
+      "phrase": "가격 걱정 심부름 걱정 별도 갈색 기법 기운 경력 산길 미술 기념",
+      "password": "TREZOR",
+      "address": "0x9B7600beda525bF44C191156a7363C504054ED48"
+    },
+    {
+      "language": "ko",
+      "phrase": "가격 걱정 심부름 걱정 별도 갈색 기법 기운 경력 산길 미술 금고 가상 어른 벨트",
+      "password": "TREZOR",
+      "address": "0x19cdD6e35d78DFa53FD9771aBfAeA2760A8a72e2"
+    },
+    {
+      "language": "ko",
+      "phrase": "가격 걱정 심부름 걱정 별도 갈색 기법 기운 경력 산길 미술 금고 가상 어른 배달 아울러 교육 전기",
+      "password": "TREZOR",
+      "address": "0xc2C47573CdC01060535d0c3a2C9A54e5C7d00fEF"
+    },
+    {
+      "language": "ko",
+      "phrase": "가격 걱정 심부름 걱정 별도 갈색 기법 기운 경력 산길 미술 금고 가상 어른 배달 아울러 교육 전공 같이 독립 정문",
+      "password": "TREZOR",
+      "address": "0x384669B9fb9034CFa33F20F53A4336b5DbFCF595"
+    },
+    {
+      "language": "ko",
+      "phrase": "가격 걱정 심부름 걱정 별도 갈색 기법 기운 경력 산길 미술 금고 가상 어른 배달 아울러 교육 전공 같이 독립 작품 고민 시댁 하드웨어",
+      "password": "TREZOR",
+      "address": "0xa1883715ac9595d118030eD507ae54Aaa772153b"
+    },
+    {
+      "language": "zh_cn",
+      "phrase": "的 三 欧 三 考 于 据 保 量 损 破 战",
+      "password": "TREZOR",
+      "address": "0x959BE5A4Bbb06f58cdBe6028b463814821E9a08a"
+    },
+    {
+      "language": "zh_cn",
+      "phrase": "的 三 欧 三 考 于 据 保 量 损 破 九 人 雄 助",
+      "password": "TREZOR",
+      "address": "0x779927DFc11FFe5f672710330Be920522208E24C"
+    },
+    {
+      "language": "zh_cn",
+      "phrase": "的 三 欧 三 考 于 据 保 量 损 破 九 人 雄 修 麦 最 魏",
+      "password": "TREZOR",
+      "address": "0x578b8037dAA7e9411f2Cc3be6969Bd0eF5433982"
+    },
+    {
+      "language": "zh_cn",
+      "phrase": "的 三 欧 三 考 于 据 保 量 损 破 九 人 雄 修 麦 最 仓 面 约 趣",
+      "password": "TREZOR",
+      "address": "0xD8Db1c12Be7bD599b9a4783d05fC1dB351c8e4b2"
+    },
+    {
+      "language": "zh_cn",
+      "phrase": "的 三 欧 三 考 于 据 保 量 损 破 九 人 雄 修 麦 最 仓 面 约 袋 天 绍 汁",
+      "password": "TREZOR",
+      "address": "0xE33c07AA636ed456Ff19D58Fa12a27AE10692774"
+    },
+    {
+      "language": "zh_tw",
+      "phrase": "的 三 歐 三 考 於 據 保 量 損 破 戰",
+      "password": "TREZOR",
+      "address": "0xF933cd00166CA9d960604C5799d85D9c77f3E225"
+    },
+    {
+      "language": "zh_tw",
+      "phrase": "的 三 歐 三 考 於 據 保 量 損 破 九 人 雄 助",
+      "password": "TREZOR",
+      "address": "0xA759e17e8b9A56760D0087623BEDA31818213BA2"
+    },
+    {
+      "language": "zh_tw",
+      "phrase": "的 三 歐 三 考 於 據 保 量 損 破 九 人 雄 修 麥 最 魏",
+      "password": "TREZOR",
+      "address": "0x43F16313CFd69031240F9D79727edaf305f1E2eb"
+    },
+    {
+      "language": "zh_tw",
+      "phrase": "的 三 歐 三 考 於 據 保 量 損 破 九 人 雄 修 麥 最 倉 面 約 趣",
+      "password": "TREZOR",
+      "address": "0xd81fbE13cF24DC13b737812e64B7DBC6D16F5Aa9"
+    },
+    {
+      "language": "zh_tw",
+      "phrase": "的 三 歐 三 考 於 據 保 量 損 破 九 人 雄 修 麥 最 倉 面 約 袋 天 紹 汁",
+      "password": "TREZOR",
+      "address": "0x858AC0EAc0624A4Fc575C33b3C7D6fa55e93E900"
+    },
+    {
+      "language": "cz",
+      "phrase": "abdikace bidlo obvykle bidlo kopnout bachor doma doprovod bojovat lobista kachna dokola",
+      "password": "TREZOR",
+      "address": "0x8Aca76ff2eBed4d5415eC54D746e50621eE83DC4"
+    },
+    {
+      "language": "cz",
+      "phrase": "abdikace bidlo obvykle bidlo kopnout bachor doma doprovod bojovat lobista kachna dobytek amputace olizovat kongres",
+      "password": "TREZOR",
+      "address": "0x964d0f4DbA0B857516a7c464aCAC73dC866929a8"
+    },
+    {
+      "language": "cz",
+      "phrase": "abdikace bidlo obvykle bidlo kopnout bachor doma doprovod bojovat lobista kachna dobytek amputace olizovat koalice odeslat chrup sazenice",
+      "password": "TREZOR",
+      "address": "0xae0c85c85DcbcCD8A014B79Fb20dC0613EEeC459"
+    },
+    {
+      "language": "cz",
+      "phrase": "abdikace bidlo obvykle bidlo kopnout bachor doma doprovod bojovat lobista kachna dobytek amputace olizovat koalice odeslat chrup sazba batoh hmota skafandr",
+      "password": "TREZOR",
+      "address": "0x724d7440400b24Fe164E1862667c0D971f421839"
+    },
+    {
+      "language": "cz",
+      "phrase": "abdikace bidlo obvykle bidlo kopnout bachor doma doprovod bojovat lobista kachna dobytek amputace olizovat koalice odeslat chrup sazba batoh hmota rodokmen buchta nepokoj vymezit",
+      "password": "TREZOR",
+      "address": "0x103C0dB31d506324c71d56C19eA2c3f547be617F"
+    },
+    {
+      "language": "ja",
+      "phrase": "あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あおぞら",
+      "password": "TREZOR",
+      "address": "0x01667a5F4aC8Dc79A233930b5e20D7823A7A89D7"
+    },
+    {
+      "language": "ja",
+      "phrase": "あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　あいこくしん　いってい",
+      "password": "TREZOR",
+      "address": "0xbec2c77A3e884CB81Da869c0d5f8cff8846658eb"
+    }
+  ],
+  "custom": {
+    "phrase": "abandon amount liar amount expire adjust cage candy arch gather drum buyer",
+    "password": "Mixed Case é",
+    "iterations": 4096,
+    "address": "0x4726cca0940EF62a2848dbA47310c8C53f556048"
+  },
+  "compat": {
+    "phrase": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon",
+    "address": "0x362A9C55d54da572a7a5853171dE8Fd04d1Da800"
+  },
+  "seed": {
+    "hex": "000102030405060708090a0b0c0d0e0f",
+    "address": "0x022b971dFF0C43305e691DEd7a14367AF19D6407"
+  }
+}

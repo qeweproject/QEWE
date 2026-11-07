@@ -1,0 +1,20 @@
+// Synthetic public fixtures only. No real wallet balances or network in this test.
+const {app,BrowserWindow}=require('electron'),path=require('node:path'),fs=require('node:fs'),assert=require('node:assert/strict');
+app.setPath('userData',path.join(__dirname,'../../native-results-profile'));require(process.env.ETH_TEST_APP_MAIN||'../app/main.cjs');
+const timeout=setTimeout(()=>app.exit(2),30000),evaluate=(w,f)=>w.webContents.executeJavaScript('('+f.toString()+')()');
+async function until(w,f){for(let i=0;i<180;i++){if(await evaluate(w,f))return;await new Promise(r=>setTimeout(r,80));}throw Error('UI condition timeout');}
+app.whenReady().then(()=>{const win=BrowserWindow.getAllWindows()[0];win.webContents.once('did-finish-load',async()=>{try{
+ await evaluate(win,()=>{document.getElementById('address-count').value='3';document.getElementById('phrase').value='test test test test test test test test test test test junk';document.getElementById('derive').click();});
+ await until(win,()=>document.getElementById('count').textContent==='8');assert.equal(await evaluate(win,()=>document.querySelectorAll('.blockie').length),0);
+ const addresses=await evaluate(win,()=>Array.from(document.querySelectorAll('.address-value'),e=>e.textContent)),fetchedAt=new Date().toISOString();
+ win.webContents.send('scan-event',{type:'start',block:'0x123',unique:8,pricing:{source:'DefiLlama',fetchedAt,pricedAssets:26}});
+ addresses.forEach((address,i)=>win.webContents.send('scan-event',{type:'result',done:i+1,total:8,result:{address,eth:i===0?'1.25':i===5?null:'0.0',wei:i===0?'1250000000000000000':i===5?null:'0',nonce:i===1?'1':i===5?null:'0',tokens:i===2?[{address:'0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',symbol:'USDC',decimals:6,raw:'1000000000',balance:'1000.0',status:'ok'}]:[],activity:i===3?{status:'ok',transactions:'2',tokenTransfers:'0'}:i===4?{status:'ok',transactions:'0',tokenTransfers:'1'}:null,status:i===5?'error':'ok',usd:{micros:i===0?'250000000000':i===2?'100000000000':i===5?null:'0',partial:i===5,missing:i===5?['ETH : solde inconnu']:[],fetchedAt}}}));
+ win.webContents.send('scan-event',{type:'complete',block:'0x123'});
+ await until(win,()=>document.querySelectorAll('.blockie').length===5&&Array.from(document.querySelectorAll('.blockie')).every(e=>e.complete&&e.naturalWidth===32));
+ assert.equal(await evaluate(win,()=>document.getElementById('funded').textContent),'2');assert.equal(await evaluate(win,()=>document.getElementById('total').textContent),'1.25');assert((await evaluate(win,()=>document.getElementById('usd-total').textContent)).includes('3 500,00'));
+ const images=await evaluate(win,()=>Array.from(document.querySelectorAll('.blockie'),e=>({src:e.src,radius:getComputedStyle(e).borderRadius})));assert.equal(new Set(images.map(e=>e.src)).size,5);assert(images.every(e=>e.src.startsWith('data:image/svg+xml;')&&e.radius==='50%'));
+ assert.equal(await evaluate(win,()=>getComputedStyle(document.body).backgroundColor),'rgb(10, 12, 14)');await evaluate(win,()=>document.querySelector('.results').scrollIntoView());await new Promise(r=>setTimeout(r,120));if(process.env.ETH_RESULTS_NIGHT)fs.writeFileSync(process.env.ETH_RESULTS_NIGHT,(await win.webContents.capturePage()).toPNG());
+ await evaluate(win,()=>{document.getElementById('theme').click();});assert.equal(await evaluate(win,()=>getComputedStyle(document.body).backgroundColor),'rgb(242, 245, 247)');await new Promise(r=>setTimeout(r,120));if(process.env.ETH_RESULTS_DAY)fs.writeFileSync(process.env.ETH_RESULTS_DAY,(await win.webContents.capturePage()).toPNG());
+ assert.deepEqual(await evaluate(win,()=>Array.from(document.querySelectorAll('.blockie'),e=>e.src)),images.map(e=>e.src));assert.equal(await evaluate(win,()=>document.getElementById('airdrop-check')),null);
+ console.log('PASS real Electron: five decoded round SVGs for ETH, ERC20, nonce, incoming and token activity; none for zero/unknown; day/night colors and USD total (synthetic balances).');clearTimeout(timeout);app.exit(0);
+ }catch(e){console.error(e);clearTimeout(timeout);app.exit(1);}});});

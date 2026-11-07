@@ -1,0 +1,8 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),E=require('ethers'),G=require('../app/wallet-generator.js');
+test('Fresh BIP39 ETH wallets use Web Crypto, valid 12/24 words and the standard Ethereum path',()=>{
+ const zero=G.fromEntropy(new Uint8Array(16),'en');assert.equal(zero.phrase,'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about');assert.equal(zero.address,'0x9858EfFD232B4033E47d90003D41EC34EcaEda94');assert.equal(zero.path,"m/44'/60'/0'/0/0");
+ for(const count of [12,24])for(const lang of ['en','fr']){const result=G.create(count,lang);assert.equal(result.count,count);assert.equal(E.wordlists[lang].split(result.phrase).length,count);assert(E.Mnemonic.isValidMnemonic(result.phrase,E.wordlists[lang]));assert.equal(result.address,E.HDNodeWallet.fromPhrase(result.phrase,'',result.path,E.wordlists[lang]).address);assert(!Object.hasOwn(result,'privateKey'));assert(!Object.hasOwn(result,'entropy'));}
+ assert.notEqual(G.create().phrase,G.create().phrase);assert.throws(()=>G.create(13,'en'));assert.throws(()=>G.create(24,'xx'));
+ const source=fs.readFileSync('app/wallet-generator.js','utf8'),context=vm.createContext({ethers:E,Uint8Array});vm.runInContext(source,context);assert.throws(()=>context.WalletGenerator.create(),/sécurisé/);
+ const sizes=[],arrays=[];context.crypto={getRandomValues:bytes=>{sizes.push(bytes.length);arrays.push(bytes);bytes.fill(1);return bytes;}};context.WalletGenerator.create(12);context.WalletGenerator.create(24);assert.deepEqual(sizes,[16,32]);assert(arrays.every(a=>a.every(b=>b===0)));
+});
