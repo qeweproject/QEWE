@@ -44,3 +44,4 @@ body{user-select:text;-webkit-user-select:text}button,summary,label.check{user-s
 .extra-modes{margin-top:.5rem}
 .discovered>div{white-space:pre-line;font-size:.85em;word-break:break-all}
 .keystore-fields label{display:block;margin-top:12px}.keystore-fields #keystore-name{margin-left:10px}
+.mode-wallets{display:block;font-size:11px;color:var(--muted);margin:2px 0 4px;line-height:1.35}
