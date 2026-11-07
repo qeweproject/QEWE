@@ -1,0 +1,14 @@
+node_modules/
+dist/
+deliverables/
+*.log
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+preferences-v21.json
+.DS_Store
+Thumbs.db

@@ -1,0 +1,94 @@
+{
+  "name": "ethereum-adresses",
+  "version": "3.1.0",
+  "private": true,
+  "description": "QEWE - Ethereum Wallet Analysis & Offline Signing Tool",
+  "author": "QEWE contributors",
+  "main": "app/main.cjs",
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "build": "npm run build:vendor && npm run verify:vendor && npm run verify:privacy && electron-builder --win nsis --x64 --publish never",
+    "test:dom": "node tests/dom.cjs",
+    "start": "electron .",
+    "test:native": "electron --ozone-platform=headless --disable-gpu tests/native-v3.cjs",
+    "build:ledger": "node scripts/build-ledger-tokens.cjs && node scripts/build-ledger.cjs",
+    "test:transfers": "electron --ozone-platform=headless --disable-gpu tests/native-transfers.cjs",
+    "test:security": "node --test tests/security.test.cjs",
+    "verify:release": "node scripts/verify-release.cjs",
+    "verify:privacy": "node scripts/verify-privacy.cjs",
+    "build:vendor": "node scripts/build-vendor.cjs && npm run build:ledger",
+    "verify:vendor": "node scripts/verify-vendor.cjs"
+  },
+  "dependencies": {
+    "ethers": "6.17.0"
+  },
+  "devDependencies": {
+    "@ledgerhq/hw-transport-webhid": "6.36.0",
+    "buffer": "6.0.3",
+    "electron": "45.2.3",
+    "electron-builder": "26.18.0",
+    "esbuild": "0.28.2",
+    "jsdom": "26.1.0",
+    "playwright": "1.58.2"
+  },
+  "build": {
+    "appId": "local.ethereum.adresses",
+    "productName": "Quick Ethereum Wallet Explorer",
+    "artifactName": "Quick_Ethereum_Wallet_Explorer_Installation_Win11_${version}.${ext}",
+    "directories": {
+      "output": "../deliverables"
+    },
+    "files": [
+      "app/**/*",
+      "package.json",
+      "LISEZMOI.txt",
+      "VALIDATION.txt",
+      "LICENSE",
+      "THIRD_PARTY_NOTICES.md",
+      "SECURITY.md"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Quick Ethereum Wallet Explorer",
+      "installerLanguages": [
+        "en_US"
+      ],
+      "language": "1033",
+      "deleteAppDataOnUninstall": true,
+      "script": "installer.nsi",
+      "differentialPackage": false
+    },
+    "compression": "store",
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true
+    }
+  },
+  "license": "MIT",
+  "overrides": {
+    "minimatch@>=7.0.0 <11.0.1": "11.0.5"
+  },
+  "engines": {
+    "node": ">=24 <25"
+  }
+}

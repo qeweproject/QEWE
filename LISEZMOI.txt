@@ -1,0 +1,72 @@
+QEWE 3.1.0 — Quick Ethereum Wallet Explorer — Windows 11 x64
+Ethereum Wallet Analysis & Offline Signing Tool
+
+Cette version candidate ajoute des corrections de sécurité. Aucun audit
+indépendant ni essai sur un Ledger physique ou une vraie session Windows 11
+n'a été réalisé ici. Les tests utilisent des portefeuilles publics de test.
+
+INSTALLER
+Fermer QEWE, puis lancer l'installateur 3.1.0. Installation personnelle, sans
+élévation administrateur, avec raccourcis. Le programme n'est pas signé par
+un certificat d'éditeur. Ne désactivez pas vos protections pour l'installer.
+L'anglais est initial ; globe en haut à droite pour le français ou 19 autres
+choix. Certains diagnostics des langues ajoutées restent en anglais.
+
+LEDGER
+Brancher l'appareil, saisir son PIN SUR LE LEDGER et ouvrir Ethereum.
+Lire le Ledger USB utilise Live, Legacy, BIP44 et le chemin personnalisé.
+25 adresses par chemin au départ, de 1 à 10 000 ; les doublons gardent leurs
+chemins. Les grandes lectures sont longues ; commencer à 25 et augmenter.
+Ne jamais saisir les mots de récupération d'un Ledger dans le logiciel.
+
+SOLDES
+Cliquer Vérifier les soldes. Les 25 ERC20 restent sélectionnés. La flèche
+ouvre RPC et options. Historique indexé et cours USD sont maintenant décochés
+initialement ; leur activation transmet des données publiques aux fournisseurs
+indiqués. Le RPC choisi reçoit les adresses interrogées. Une erreur signifie
+inconnu, pas zéro. Le bouton de bloc relance un contrôle au dernier bloc.
+Copie par adresse/page (250 lignes), copie complète, JSON et CSV disponibles.
+Les Blockies sont générés localement. Le bouton soleil/lune change le thème.
+
+PHRASES ET CLÉS
+Les volets secondaires lisent localement BIP39, formats historiques connus,
+xprv racine et clés privées brutes. Les formats historiques non validés sont
+réservés à la lecture. La création de phrase utilise l'aléa cryptographique
+local, avec 12 ou 24 mots. Une phrase créée sur le PC reste exposée au PC.
+Aucun effacement physique garanti de la mémoire, du swap ou du presse-papiers.
+
+TRANSACTIONS
+Envoyer Tx est proposé pour les adresses lues sur le Ledger dans la session.
+Choisir destinataire, actif et montant ; préparer, vérifier le récapitulatif,
+puis comparer et confirmer sur le Ledger. Les adresses reconnues dans la
+lecture sont distinguées des destinataires externes ; le logiciel revérifie
+les chemins reconnus avant signature. Les contrats ERC20 se personnalisent
+sans changer la sélection initiale. Les tokens envoyables doivent disposer
+d'un descriptif Ledger pris en charge.
+Les limites absolues sont : 0,05 ETH de frais maximum par transaction,
+1000 Gwei par gas, 50 Gwei de pourboire et 1 000 000 unités de gas.
+Ce sont des plafonds de sécurité, pas les frais automatiquement facturés.
+Les frais proposés restent à vérifier ; un RPC peut donner de fausses données.
+
+HORS LIGNE
+Préparer/exporter le JSON non signé sur le poste connecté. Sur le poste
+réellement déconnecté, importer et vérifier dans Transactions hors ligne,
+activer Mode hors ligne puis signer avec Ledger, BIP39 standard, xprv racine
+ou clé brute. Le mode ne peut pas être retiré pendant une signature active.
+Exporter le JSON signé ; l'importer ensuite sur le poste connecté et diffuser
+explicitement. Les fichiers signés autorisent le transfert correspondant :
+ne pas les publier prématurément. Le logiciel ne diffuse jamais automatiquement
+un export et ne répète pas un envoi incertain : vérifier le hash avant de réessayer.
+Mainnet Ethereum, EIP-1559, transferts ETH/ERC20 uniquement ; pas d'approval,
+EIP-712, signature de message ou appel de contrat arbitraire.
+
+DONS VOLONTAIRES
+0x1B8147Eb5b45Cf7a9569EF23bd8ca42b63867B50
+Adresse visible et copiable. Aucune commission cachée ou transaction de don
+automatique. Cette adresse est publique et peut relier des activités blockchain.
+
+CODE ET LICENCES
+README.md décrit la reconstruction, SECURITY.md les limites, SECURITY_REVIEW.md
+les changements, VALIDATION.txt les résultats. Proposition de licence MIT pour
+le code original, crédits et licences des tiers conservés. Un fork peut changer
+le code et l'adresse de tips. Aucun dépôt ni release n'est publié par ce paquet.
