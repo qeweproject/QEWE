@@ -93,10 +93,9 @@ async function discoverTokens(base,address,network,signal,fetcher=fetch){
   return out;
 }
 function used(r){
-  // Only an unknown ETH balance or nonce counts as "used" (never skip on missing core data).
-  // A token that cannot be read, a partial USD estimate or a failed extra network affects every
-  // address the same way and must not disable the stop: those are ignored here.
+  // An unknown asset balance is not proof of an empty address. Missing prices alone are harmless.
   if(!r||r.wei===null||r.wei===undefined||r.nonce===null||r.nonce===undefined)return true;
+  if(r.tokens.some(t=>t.status==='error'||t.raw===null||t.raw===undefined)||(r.networks||[]).some(n=>n.status!=='ok'||n.wei===null||n.wei===undefined||n.nonce===null||n.nonce===undefined)||r.activity?.status==='error'||(r.discoveryStatus&&r.discoveryStatus!=='ok'))return true;
   const pos=v=>v!==null&&v!==undefined&&BigInt(v)>0n;
   return pos(r.wei)||pos(r.nonce)||r.tokens.some(t=>pos(t.raw))||(r.networks||[]).some(n=>pos(n.wei)||pos(n.nonce))||
     (r.activity?.status==='ok'&&(pos(r.activity.transactions)||pos(r.activity.tokenTransfers)))||(r.discovered||[]).length>0;

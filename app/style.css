@@ -57,3 +57,5 @@ body{user-select:text;-webkit-user-select:text}button,summary,label.check{user-s
 .pairing-dialog code{display:block;font-size:20px;letter-spacing:.08em;margin:14px 0;white-space:pre-wrap}
 @media (max-width:760px){.ledger-hero{flex-direction:column;align-items:stretch}.device-buttons{min-width:0}}
 .pairing-dialog{background:var(--panel,#111);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:24px}.pairing-dialog::backdrop{background:rgba(0,0,0,.55)}
+
+.qewe-logo{width:64px;height:64px;object-fit:contain}.mark{width:64px;flex-basis:64px}

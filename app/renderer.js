@@ -119,11 +119,13 @@ $('derive').addEventListener('click',async()=>{
   worker.postMessage({phrase,password,language,modes,custom,limit,options});
   }catch(_){worker?.terminate();worker=null;busy=false;controls();status('Impossible de démarrer la génération locale. Fermez puis relancez l’application, ou réinstallez la version 3.1.0.',true);}
 });
+let bitboxReady;
+function loadBitbox(){if(!bitboxReady)bitboxReady=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='vendor/bitbox-usb.js';script.onload=resolve;script.onerror=()=>{bitboxReady=null;script.remove();reject(Error('Module BitBox02 indisponible.'));};document.head.append(script);});return bitboxReady;}
 // Hardware wallets. Ledger: addresses + signing. Trezor and BitBox02: public address reads only (experimental).
 const DEVICES={
   ledger:{name:'Ledger',connect:signal=>LedgerUsb.connect(signal),explain:e=>LedgerCore.explain(e)},
   trezor:{name:'Trezor',connect:signal=>TrezorUsb.connect(signal),explain:e=>TrezorCore.explain(e)},
-  bitbox:{name:'BitBox02',connect:signal=>BitBoxUsb.connect(signal,showPairing),explain:e=>{
+  bitbox:{name:'BitBox02',connect:async signal=>{await loadBitbox();signal.throwIfAborted();return BitBoxUsb.connect(signal,showPairing);},explain:e=>{
     if(e?.name==='BitBoxError')return e.message;
     if(/NotFound|NotAllowed|user-abort|abort/i.test(`${e?.name} ${e?.code} ${e?.message}`))return 'Connexion annulée ou aucun appareil autorisé.';
     return 'Lecture BitBox02 impossible. Fermez BitBoxApp, déverrouillez le BitBox02 et réessayez.';}}
@@ -213,7 +215,7 @@ for(const net of EvmNetworks.NETWORKS){
 // The user can still tick them again by hand.
 $('network-choices').addEventListener('change',()=>{
   const any=!!document.querySelector('input[name=network]:checked');
-  for(const id of ['usd','history','discover'])$(id).checked=!any;
+  // Service choices are opt-in and never changed by network selection.
 });
 const presets=$('token-presets');
 for(const token of TokenPresets){

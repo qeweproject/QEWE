@@ -20,9 +20,10 @@
     const read = () => { let shift = 0n, v = 0n, b; do { if (i >= bytes.length || shift > 63n) throw Error('Réponse Trezor invalide.'); b = bytes[i++]; v |= BigInt(b & 0x7f) << shift; shift += 7n; } while (b & 0x80); return v; };
     while (i < bytes.length) {
       const key = read(), field = Number(key >> 3n), type = Number(key & 7n); let value;
+      if(field<1||field>0x1fffffff)throw Error('Réponse Trezor invalide.');
       if (type === 0) value = read();
       else if (type === 2) { const len = Number(read()); if (i + len > bytes.length) throw Error('Réponse Trezor invalide.'); value = bytes.slice(i, i + len); i += len; }
-      else if (type === 5) { i += 4; continue; } else if (type === 1) { i += 8; continue; }
+      else if (type === 5) { if(i+4>bytes.length)throw Error('Réponse Trezor invalide.');i += 4; continue; } else if (type === 1) { if(i+8>bytes.length)throw Error('Réponse Trezor invalide.');i += 8; continue; }
       else throw Error('Réponse Trezor invalide.');
       (out[field] ||= []).push(value);
     }
@@ -39,12 +40,12 @@
   }
   async function receive(readPacket) {
     const first = await readPacket();
-    if (first.length < 9 || first[0] !== 0x3f || first[1] !== 0x23 || first[2] !== 0x23) throw Error('Réponse Trezor invalide.');
+    if (first.length !== PACKET || first[0] !== 0x3f || first[1] !== 0x23 || first[2] !== 0x23) throw Error('Réponse Trezor invalide.');
     const view = new DataView(first.buffer, first.byteOffset, first.byteLength), type = view.getUint16(3), length = view.getUint32(5);
     if (length > MAX_MESSAGE) throw Error('Réponse Trezor trop volumineuse.');
     const data = new Uint8Array(length); data.set(first.slice(9, 9 + length));
     let filled = Math.min(length, first.length - 9);
-    while (filled < length) { const p = await readPacket(); if (p[0] !== 0x3f) throw Error('Réponse Trezor invalide.'); const chunk = p.slice(1, 1 + length - filled); data.set(chunk, filled); filled += chunk.length; }
+    while (filled < length) { const p = await readPacket(); if (p.length!==PACKET||p[0] !== 0x3f) throw Error('Réponse Trezor invalide.'); const chunk = p.slice(1, 1 + length - filled); data.set(chunk, filled); filled += chunk.length; }
     return { type, data };
   }
   class TrezorError extends Error { constructor(message, code) { super(message); this.name = 'TrezorError'; this.code = code; } }

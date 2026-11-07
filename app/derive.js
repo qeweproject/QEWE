@@ -7,6 +7,19 @@
   const LANGUAGES={en:'Anglais',fr:'Français',es:'Espagnol',it:'Italien',pt:'Portugais',ja:'Japonais',ko:'Coréen',zh_cn:'Chinois simplifié',zh_tw:'Chinois traditionnel',cz:'Tchèque'};
   class InputError extends Error {constructor(code,message){super(message);this.code=code;}}
   const fail=(code,message)=>{throw new InputError(code,message);};
+  // A tiny JSON file can otherwise request gigabytes of RAM or billions of KDF rounds.
+  function boundedKeystore(json){
+    let data;try{data=JSON.parse(json);}catch{fail('KEYSTORE_FORMAT','Fichier keystore JSON invalide.');}
+    const field=(o,k)=>{if(!o||typeof o!=='object'||Array.isArray(o))return;const keys=Object.keys(o).filter(x=>x.toLowerCase()===k);if(keys.length!==1)return;return o[keys[0]];};
+    const crypto=field(data,'crypto'),params=field(crypto,'kdfparams'),kdf=String(field(crypto,'kdf')||'').toLowerCase();
+    const number=k=>{let value=field(params,k);if(typeof value==='string'&&/^\d{1,15}$/.test(value))value=Number(value);return Number.isSafeInteger(value)&&value>0?BigInt(value):0n;};
+    let ok=false;
+    if(number('dklen')===32n){
+      if(kdf==='scrypt'){const n=number('n'),r=number('r'),p=number('p');ok=n>=2n&&(n&(n-1n))===0n&&r>0n&&r<=32n&&p>0n&&p<=16n&&128n*n*r<=268435456n&&n*r*p<=4194304n;}
+      if(kdf==='pbkdf2')ok=number('c')>0n&&number('c')<=2000000n;
+    }
+    if(!ok)fail('KEYSTORE_COST','Paramètres de déchiffrement refusés : limites de mémoire ou de calcul dépassées, ou paramètres invalides. Le fichier n’a pas été déchiffré.');
+  }
   const fold=word=>word.normalize('NFKD').toLowerCase().replace(/\p{M}/gu,'');
   const dictionaries=new Map();
   function dictionary(lang){
@@ -45,6 +58,7 @@
       const json=phrase.trim();let keystore=false,presale=false;
       try{keystore=E.isKeystoreJson(json);presale=!keystore&&E.isCrowdsaleJson(json);}catch{}
       if(!keystore&&!presale)fail('KEYSTORE_FORMAT','Fichier keystore non reconnu. Utilisez un fichier JSON chiffré (UTC--…) de MyEtherWallet, Geth ou MetaMask.');
+      if(keystore)boundedKeystore(json);
       let key;
       try{
         const account=keystore?E.decryptKeystoreJsonSync(json,password):E.decryptCrowdsaleJson(json,password);
