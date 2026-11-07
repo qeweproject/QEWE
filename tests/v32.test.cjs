@@ -84,3 +84,22 @@ test('Blockscout discovery keeps only well-formed, non-zero, display-safe entrie
   assert.deepEqual(await discoverTokens('https://eth.blockscout.com',a.address,'ethereum',signal(),async()=>json({},404)),[]);
   await assert.rejects(discoverTokens('https://eth.blockscout.com','secret words','ethereum',signal(),async()=>json({items})));
 });
+
+test('Encrypted JSON keystores open with their password, read-only and usable for offline signing',()=>{
+  const E=require('ethers'),{signOffline}=require('../app/derive.js'),C=require('../app/transfer-codec.js');
+  const w=E.Wallet.fromPhrase(phrase);
+  const json=E.encryptKeystoreJsonSync({address:w.address,privateKey:w.privateKey},'correct horse',{scrypt:{N:1024}});
+  let info;const rows=derive(json,'correct horse','auto',[],()=>{},'',25,{format:'keystore'},i=>info=i);
+  assert.equal(rows.length,1);assert.equal(rows[0].address,w.address);assert.equal(rows[0].derivations[0].mode,'Fichier keystore JSON · lecture seule');assert.equal(info.format,'keystore');
+  assert.throws(()=>derive(json,'wrong','auto',[],()=>{},'',25,{format:'keystore'}),e=>e.code==='KEYSTORE_PASSWORD'&&!e.message.includes('correct horse'));
+  assert.throws(()=>derive(json,'','auto',[],()=>{},'',25,{format:'keystore'}),e=>e.code==='KEYSTORE_PASSWORD');
+  assert.throws(()=>derive('{"not":"a keystore"}','x','auto',[],()=>{},'',25,{format:'keystore'}),e=>e.code==='KEYSTORE_FORMAT');
+  assert.throws(()=>derive(json,'correct horse','auto',[],()=>{},'',25,{format:'keystore',extraWord:true}),e=>e.code==='KEY_OPTIONS');
+  // Tampered address field must not be trusted.
+  const tampered=JSON.stringify({...JSON.parse(json),address:'1111111111111111111111111111111111111111'});
+  assert.throws(()=>derive(tampered,'correct horse','auto',[],()=>{},'',25,{format:'keystore'}));
+  const unsigned=E.Transaction.from({type:2,chainId:1,nonce:0,gasLimit:21000n,maxFeePerGas:30000000000n,maxPriorityFeePerGas:1000000000n,to:'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',value:1n,data:'0x'}).unsignedSerialized;
+  const plan={from:w.address,path:"m/44'/60'/0'/0/0",asset:'ETH',unsigned,recipient:'0x70997970C51812dc3A010C7d01b50e0d17dc79C8',recipientPath:null,units:'1'};
+  const signed=signOffline(json,'correct horse','auto',{format:'keystore',iterations:2048},plan);
+  assert.equal(C.verifySigned(plan,signed.serialized).hash,signed.hash);
+});

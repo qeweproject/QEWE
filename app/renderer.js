@@ -13,7 +13,7 @@ function controls(){
   $('copy-all').disabled=busy||!rows.length;
   $('scan').disabled=busy||!rows.length;$('refresh-block').disabled=busy||!rows.length;$('csv').disabled=busy||!done;$('stop').disabled=!busy;$('stop').hidden=!busy;
   $('clear').disabled=busy;
-  for(const id of ['phrase','password','language','endpoint','tokens','custom','address-count','recovery-format','pbkdf2-rounds','expand-words','extra-word'])$(id).disabled=busy;
+  for(const id of ['phrase','password','language','endpoint','tokens','custom','address-count','recovery-format','pbkdf2-rounds','expand-words','extra-word','keystore-pick','keystore-password'])$(id).disabled=busy;
   document.querySelectorAll('input[name=mode]').forEach(e=>e.disabled=busy);
   document.querySelectorAll('input[name=token],#history,#usd,#discover,#gap,input[name=network],#network-rpcs input').forEach(e=>e.disabled=busy);
 }
@@ -84,27 +84,27 @@ function render(){
 }
 async function reset(){
   worker?.terminate();worker=null;Blockies.clear();window.OfflineTransactions?.reset();window.Transfers?.reset();window.NewWallet?.clear();
-  $('derivation-info').textContent='';$('phrase').value='';$('password').value='';$('show').checked=false;$('phrase').type='password';$('words').textContent='0 mot';
+  $('derivation-info').textContent='';$('phrase').value='';$('password').value='';$('keystore-password').value='';$('keystore-name').textContent='';$('show').checked=false;$('phrase').type='password';$('words').textContent='0 mot';
   tablePage=0;rows=[];results={};block='';done=0;busy=false;scanning=false;pricing=null;
   await desktop.forget();controls();render();
 }
 $('phrase').addEventListener('input',()=>{$('words').textContent=`${$('phrase').value.trim().split(/\s+/).filter(Boolean).length} mots`;});
 $('phrase').addEventListener('paste',event=>{const text=event.clipboardData?.getData('text/plain');if(text){event.preventDefault();const input=$('phrase');input.setRangeText(text.replace(/[\r\n\t]+/gu,' '),input.selectionStart,input.selectionEnd,'end');input.dispatchEvent(new Event('input'));}});
 // Security: a pasted seed/passphrase must not linger in the clipboard (Windows clipboard history, sync, other apps).
-for(const id of ['phrase','password'])$(id).addEventListener('paste',()=>setTimeout(()=>desktop.clearClipboard?.().catch(()=>{}),0));
+for(const id of ['phrase','password','keystore-password'])$(id).addEventListener('paste',()=>setTimeout(()=>desktop.clearClipboard?.().catch(()=>{}),0));
 $('show').addEventListener('change',()=>{$('phrase').type=$('show').checked?'text':'password';});
 window.addEventListener('blur',()=>{$('show').checked=false;$('phrase').type='password';});
 $('clear').addEventListener('click',async()=>{await reset();status('Adresses et champs secrets effacés de l’interface.');});
 $('copy-all').addEventListener('click',()=>copyAddresses(rows.map(row=>row.address),$('copy-all')));
 $('copy-visible').addEventListener('click',()=>copyAddresses(pageRows().map(row=>row.address),$('copy-visible')));
 $('derive').addEventListener('click',async()=>{
-  const phrase=$('phrase').value,password=$('password').value,language=$('language').value;
+  const keystore=$('recovery-format').value==='keystore',phrase=$('phrase').value,password=keystore?$('keystore-password').value:$('password').value,language=$('language').value;
   const modes=[...document.querySelectorAll('input[name=mode]:checked')].map(x=>x.value),custom=$('custom').value.trim();
   const limit=Number($('address-count').value);
   const options={format:$('recovery-format').value,iterations:Number($('pbkdf2-rounds').value),expandWords:$('expand-words').checked,extraWord:$('extra-word').checked};
   if(!Number.isInteger(limit)||limit<1||limit>10000){status('Choisissez un nombre entier entre 1 et 10000 adresses par chemin.',true);return;}
-  if(!phrase.trim()){status('Saisissez votre phrase ou votre seed.',true);return;}
-  if(options.format!=='private'&&!modes.length&&!custom){status('Sélectionnez au moins un chemin.',true);return;}
+  if(!phrase.trim()){status(keystore?'Choisissez d’abord le fichier keystore.':'Saisissez votre phrase ou votre seed.',true);return;}
+  if(!['private','keystore'].includes(options.format)&&!modes.length&&!custom){status('Sélectionnez au moins un chemin.',true);return;}
   try {
   await reset();busy=true;controls();status('Génération locale en cours…');
   worker=new Worker('worker.js');
@@ -112,7 +112,7 @@ $('derive').addEventListener('click',async()=>{
     if(data.progress){status(`Génération locale : ${data.progress} adresses…`);return;}
     worker?.terminate();worker=null;busy=false;
     if(data.error){status(data.error,true);controls();return;}
-    const info=data.info;if(info){$('derivation-info').textContent=[info.format==='bip39'?'BIP39 validé · '+info.language:info.format==='compat'?'PBKDF2 de compatibilité · phrase non validée':info.format==='private'?'Clé privée · lecture seule':info.format==='xprv'?'Clé racine BIP32 · xprv':'Seed BIP32 hexadécimale',['seed','private','xprv'].includes(info.format)?'':info.iterations+' itérations',...info.warnings].filter(Boolean).join(' · ');$('derivation-info').className=info.format==='bip39'&&info.iterations===2048?'muted small':'notice small';}
+    const info=data.info;if(info){$('derivation-info').textContent=[info.format==='bip39'?'BIP39 validé · '+info.language:info.format==='compat'?'PBKDF2 de compatibilité · phrase non validée':info.format==='private'?'Clé privée · lecture seule':info.format==='keystore'?'Fichier keystore JSON · lecture seule':info.format==='xprv'?'Clé racine BIP32 · xprv':'Seed BIP32 hexadécimale',['seed','private','xprv','keystore'].includes(info.format)?'':info.iterations+' itérations',...info.warnings].filter(Boolean).join(' · ');$('derivation-info').className=info.format==='bip39'&&info.iterations===2048?'muted small':'notice small';}
     rows=AddressBook.normalizeRows(data.rows);status(`${rows.length} adresses uniques générées, ${rows.reduce((n,r)=>n+r.derivations.length,0)} chemins associés. Prêt pour l’export ou la vérification.`);controls();render();
   };
   worker.onerror=()=>{worker?.terminate();worker=null;busy=false;controls();status('Impossible de charger le module local de génération. Réinstallez la version 3.1.0. Aucun secret n’a été envoyé.',true);};
@@ -209,6 +209,21 @@ $('theme').addEventListener('click',()=>{
 });
 controls();
 
-$('recovery-format').addEventListener('change',()=>{const format=$('recovery-format').value,key=['private','xprv'].includes(format);$('phrase').placeholder=format==='private'?'64 caractères hexadécimaux, avec ou sans 0x':format==='xprv'?'xprv…':'12, 15, 18, 21 ou 24 mots';if(key)$('format-help').textContent=format==='private'?'Clé privée brute : une seule adresse, sans dérivation. Lecture seule.':'Clé racine xprv : chemins BIP32 complets. Lecture seule.';});
+$('recovery-format').addEventListener('change',()=>{const format=$('recovery-format').value,key=['private','xprv'].includes(format);$('phrase').placeholder=format==='private'?'64 caractères hexadécimaux, avec ou sans 0x':format==='xprv'?'xprv…':'12, 15, 18, 21 ou 24 mots';if(key)$('format-help').textContent=format==='private'?'Clé privée brute : une seule adresse, sans dérivation. Lecture seule.':'Clé racine xprv : chemins BIP32 complets. Lecture seule.';keystoreMode();});
+// Encrypted JSON keystore: the file content goes into the (hidden) secret field, its password into a dedicated field.
+function keystoreMode(){
+  const on=$('recovery-format').value==='keystore';
+  $('keystore-fields').hidden=!on;$('phrase').hidden=on;document.querySelector('label[for=phrase]').hidden=on;$('show').closest('.inline').hidden=on;
+  $('language').closest('div').hidden=on;$('passphrase-options').hidden=on;
+  if(on){$('format-help').textContent='Fichier keystore chiffré (MyEtherWallet, Geth, MetaMask, presale) : choisissez le fichier puis saisissez son mot de passe. Une seule adresse, lecture seule.';$('phrase').value='';$('show').checked=false;$('phrase').type='password';}
+  else{$('keystore-password').value='';$('keystore-name').textContent='';if($('phrase').value.trim().startsWith('{'))$('phrase').value='';}
+}
+$('keystore-pick').addEventListener('click',()=>$('keystore-file').click());
+$('keystore-file').addEventListener('change',async()=>{
+  const file=$('keystore-file').files[0];$('keystore-file').value='';if(!file)return;
+  try{if(file.size>8192)throw Error();const text=await file.text();if(!text.trim().startsWith('{'))throw Error();$('phrase').value=text;$('keystore-name').textContent=file.name.slice(0,120);$('keystore-password').focus();}
+  catch{$('phrase').value='';$('keystore-name').textContent='';status('Fichier keystore illisible ou trop volumineux.',true);}
+});
+keystoreMode();
 
 $('copy-tips').addEventListener('click',()=>copyAddresses([$('tips-address').textContent],$('copy-tips')));

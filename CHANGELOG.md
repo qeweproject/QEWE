@@ -13,6 +13,9 @@
 - Optional Blockscout discovery of all ERC20/ERC721/ERC1155 holdings, sanitized,
   display-only, excluded from the "positive balance" filter and USD estimate.
 - CSV export: other networks and discovered tokens columns.
+- Encrypted JSON keystore files (Web3 Secret Storage from MyEtherWallet, Geth,
+  MetaMask, and Ethereum presale wallets) open with their password, in the
+  seed-reading panel (one read-only address) and as an offline signer.
 - Linux AppImage and macOS dmg build targets; release workflow builds and
   attests all three platforms; `verify-release` accepts `win|linux|mac`.
 - README features/screenshots, `docs/VERIFY.md`, `docs/RELEASING.md`.
