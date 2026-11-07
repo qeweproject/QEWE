@@ -1,3 +1,18 @@
+# Unreleased — security review follow-up
+
+- RPC URLs now require a one-time native confirmation per session (main
+  process). A compromised renderer can no longer exfiltrate a seed by hiding it
+  inside an RPC URL passed over IPC. The default PublicNode endpoint is pre-approved.
+- Clipboard is cleared right after pasting into seed/passphrase fields.
+- Window content protection enabled (excluded from screenshots/screen sharing).
+- Single-instance lock; global `web-contents-created` navigation/window guard.
+- Transaction summary values (addresses, amounts, fees, path) are excluded from
+  the translation layer so displayed values can never be rewritten.
+- Offline unsigned envelopes are normalized to canonical lowercase hex, so mixed
+  case files no longer fail after signing.
+- Dependabot cooldown (7 days, 14 for majors); release workflow building the
+  Windows installer on `v*` tags with SHA256 and build provenance attestation.
+
 # 3.1.0 — security-hardening candidate
 
 - Removed the cryptoasset package used only to extract a fixed descriptor

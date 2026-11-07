@@ -24,6 +24,17 @@ For every candidate:
    removing the experimental status. Do not claim full binary reproducibility
    unless two independent builds have actually been compared.
 
+Renderer/network boundary:
+
+- Seeds, passphrases and private keys only exist in the sandboxed renderer and
+  its short-lived workers, which have no network access (CSP `connect-src 'none'`
+  and a session-wide request filter allowing only local application files).
+- The main process performs all network calls. Every RPC URL it receives from the
+  renderer must first be confirmed by the user in a native dialog, so tampered
+  renderer code cannot encode a secret into an attacker-controlled URL.
+- "Offline mode" is an application-level network block, not an air gap. For
+  signing with a typed seed, use a computer that is physically disconnected.
+
 Remaining boundaries:
 
 - RPCs, token contracts and price/history services can lie, fail, or correlate

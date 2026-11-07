@@ -1,14 +1,14 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 test('Desktop bridge: sandbox, origin checks, external requests blocked, public-only exports',async()=>{
-  const contentEvents=new Map(),editCalls=[],menus=[];const sessionEvents=new Map();let permissionCheck;const handlers=new Map(),events=[],writes=[],copies=[],opened=[];let instance,requestFilter,permission,exportPath='/virtual/public.json';
+  const contentEvents=new Map(),editCalls=[],menus=[];const sessionEvents=new Map();let permissionCheck;const handlers=new Map(),events=[],writes=[],copies=[],opened=[];let instance,requestFilter,permission,exportPath='/virtual/public.json';const prompts=[];let approveRpc=false;
   class Window{
     constructor(options){instance=this;this.options=options;this.webContents={send:(...args)=>events.push(args),setWindowOpenHandler:fn=>this.open=fn,on:(name,fn)=>contentEvents.set(name,fn),copy:()=>editCalls.push('copy'),paste:()=>editCalls.push('paste'),cut:()=>editCalls.push('cut'),selectAll:()=>editCalls.push('selectAll')};}
-    setMenu(){}on(){}loadURL(url){this.url=url;}isDestroyed(){return false;}
+    setMenu(){}setContentProtection(value){this.protected=value;}on(){}loadURL(url){this.url=url;}isDestroyed(){return false;}
   }
-  const fakeElectron={Menu:{buildFromTemplate:items=>({popup:()=>menus.push(items)})},app:{commandLine:{appendSwitch(){}},getPath:()=>'/virtual/profile',whenReady:()=>Promise.resolve(),on(){},quit(){}},BrowserWindow:Window,
-    clipboard:{writeText:async text=>copies.push(text)},shell:{openExternal:async url=>opened.push(url)},
-    ipcMain:{handle:(name,fn)=>handlers.set(name,fn)},dialog:{showSaveDialog:async()=>({canceled:false,filePath:exportPath})},
+  const fakeElectron={Menu:{buildFromTemplate:items=>({popup:()=>menus.push(items)})},app:{commandLine:{appendSwitch(){}},getPath:()=>'/virtual/profile',whenReady:()=>Promise.resolve(),requestSingleInstanceLock:()=>true,on(){},quit(){}},BrowserWindow:Window,
+    clipboard:{writeText:async text=>copies.push(text),clear:()=>copies.push('<cleared>')},shell:{openExternal:async url=>opened.push(url)},
+    ipcMain:{handle:(name,fn)=>handlers.set(name,fn)},dialog:{showSaveDialog:async()=>({canceled:false,filePath:exportPath}),showMessageBox:async(_w,options)=>{prompts.push(options.detail);return {response:approveRpc?1:0};}},
     session:{fromPartition:()=>({setPermissionRequestHandler:fn=>permission=fn,setPermissionCheckHandler:fn=>permissionCheck=fn,on:(name,fn)=>sessionEvents.set(name,fn),webRequest:{onBeforeRequest:fn=>requestFilter=fn}})}};
   const appDir=path.join(__dirname,'../app');
   const context=vm.createContext({require:name=>name==='electron'?fakeElectron:name==='node:fs/promises'?{writeFile:async(...args)=>writes.push(args)}:name.startsWith('./')?require(path.join(appDir,name)):require(name),__dirname:appDir,URL,setImmediate,AbortController,console});
@@ -24,6 +24,13 @@ test('Desktop bridge: sandbox, origin checks, external requests blocked, public-
   const invalid=await handlers.get('export')(event,{kind:'addresses',rows:[{address:'secret words'}]});assert(invalid.error);assert.equal(writes.length,1);
   await assert.rejects(handlers.get('export')({...event,senderFrame:{url:'https://example.org'}},{kind:'addresses',rows}),/Origine refusée/);
   assert.equal((await handlers.get('scan')(event,{endpoint:'http://example.org',rows,tokens:[]})).error.length>0,true);
+  assert.equal(instance.protected,true);
+  // A renderer-supplied RPC URL (possible secret smuggling) needs a native confirmation; refusal means no network call.
+  const smuggled=await handlers.get('scan')(event,{endpoint:'https://attacker.example/abandon-abandon-about',rows,tokens:[]});assert.match(smuggled.error,/refusé/);assert.equal(prompts.length,1);assert(prompts[0].includes('attacker.example/abandon-abandon-about'));
+  const refusedToken=await handlers.get('token-settings')(event,{action:'add',address:rows[0].address,endpoint:'https://attacker.example/x'});assert.match(refusedToken.error,/refusé/);assert.equal(prompts.length,2);
+  assert.equal((await handlers.get('scan')(event,{endpoint:'https://ethereum-rpc.publicnode.com',rows,tokens:[]})).ok,true);assert.equal(prompts.length,2);await handlers.get('cancel')(event);await new Promise(r=>setTimeout(r,50));
+  approveRpc=true;assert.equal((await handlers.get('scan')(event,{endpoint:'https://rpc.example.org/v2/key',rows,tokens:[]})).ok,true);assert.equal(prompts.length,3);await handlers.get('cancel')(event);await new Promise(r=>setTimeout(r,50));
+  assert.equal(await handlers.get('clear-clipboard')(event),true);assert.equal(copies.pop(),'<cleared>');
   await assert.rejects(handlers.get('copy-addresses')({...event,senderFrame:{url:instance.url}},[rows[0].address]),/Origine refusée/);const publicAddress=rows[0].address;
   const copied=await handlers.get('copy-addresses')(event,[publicAddress,publicAddress]);
   assert.equal(copied.count,1);assert.equal(copies[0],publicAddress);

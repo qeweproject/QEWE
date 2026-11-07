@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('desktop',{
   scan:request=>ipcRenderer.invoke('scan',request),
   cancel:()=>ipcRenderer.invoke('cancel'),
   forget:()=>ipcRenderer.invoke('forget'),
+  clearClipboard:()=>ipcRenderer.invoke('clear-clipboard'),
   copyAddresses:addresses=>ipcRenderer.invoke('copy-addresses',addresses),
   openExplorer:address=>ipcRenderer.invoke('open-explorer',address),
   export:request=>ipcRenderer.invoke('export',request),
