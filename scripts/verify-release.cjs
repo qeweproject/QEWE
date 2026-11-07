@@ -13,7 +13,7 @@ function files(dir){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e
 (async()=>{
   for(const file of [...files(path.join(root,'app')),...['LICENSE','THIRD_PARTY_NOTICES.md','SECURITY.md','LISEZMOI.txt','VALIDATION.txt'].map(x=>path.join(root,x))]){
     const relative=path.relative(root,file).split(path.sep).join('/');
-    assert(asar.extractFile(archive,relative).equals(fs.readFileSync(file)),relative);
+    assert(asar.extractFile(archive,relative.split('/').join(path.sep)).equals(fs.readFileSync(file)),relative); // asar paths use the OS separator
   }
   const built=JSON.parse(asar.extractFile(archive,'package.json'));assert.equal(built.version,pkg.version);
   if(layout.headerDigest){
