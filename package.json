@@ -17,7 +17,9 @@
     "verify:release": "node scripts/verify-release.cjs",
     "verify:privacy": "node scripts/verify-privacy.cjs",
     "build:vendor": "node scripts/build-vendor.cjs && npm run build:ledger",
-    "verify:vendor": "node scripts/verify-vendor.cjs"
+    "verify:vendor": "node scripts/verify-vendor.cjs",
+    "build:linux": "npm run build:vendor && npm run verify:vendor && npm run verify:privacy && electron-builder --linux AppImage --x64 --publish never",
+    "build:mac": "npm run build:vendor && npm run verify:vendor && npm run verify:privacy && electron-builder --mac dmg --arm64 --publish never"
   },
   "dependencies": {
     "ethers": "6.17.0"
@@ -82,6 +84,23 @@
       "enableNodeCliInspectArguments": false,
       "enableEmbeddedAsarIntegrityValidation": true,
       "onlyLoadAppFromAsar": true
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Finance",
+      "executableName": "qewe",
+      "artifactName": "Quick_Ethereum_Wallet_Explorer_Linux_${version}_${arch}.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.finance",
+      "hardenedRuntime": true,
+      "identity": "-",
+      "artifactName": "Quick_Ethereum_Wallet_Explorer_macOS_${version}_${arch}.${ext}"
     }
   },
   "license": "MIT",

@@ -1,16 +1,34 @@
-# Windows installer build with GitHub build-provenance attestation, on version
-# tags only. Source checks stay in checks.yml. Pin every remaining action
+# Installer builds for Windows, Linux and macOS with GitHub build-provenance
+# attestation. Runs on version tags, or manually (Actions > Release build > Run).
+# Source checks stay in checks.yml. Pin every remaining action
 # (attest-build-provenance, upload-artifact) to a full commit SHA, like checkout
-# and setup-node, before the first release.
+# and setup-node, before the first public release.
 name: Release build
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  build-windows:
-    runs-on: windows-latest
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win
+            script: build
+            pattern: ../deliverables/*.exe
+          - os: ubuntu-24.04
+            platform: linux
+            script: build:linux
+            pattern: ../deliverables/*.AppImage
+          - os: macos-latest
+            platform: mac
+            script: build:mac
+            pattern: ../deliverables/*.dmg
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     permissions:
       contents: read
@@ -29,16 +47,18 @@ jobs:
       - run: npm test
       - run: node node_modules/electron/install.js
       - run: node node_modules/esbuild/install.js
-      - run: npm run build
-      - run: npm run verify:release
+      - run: npm run ${{ matrix.script }}
+      - run: node scripts/verify-release.cjs ${{ matrix.platform }}
       - name: SHA256 of the installer
-        shell: pwsh
-        run: Get-FileHash ../deliverables/*.exe -Algorithm SHA256 | Format-List
+        shell: bash
+        run: |
+          cd ../deliverables
+          for f in *.exe *.AppImage *.dmg; do [ -f "$f" ] && (sha256sum "$f" 2>/dev/null || shasum -a 256 "$f"); done
       - uses: actions/attest-build-provenance@v2
         with:
-          subject-path: ../deliverables/*.exe
+          subject-path: ${{ matrix.pattern }}
       - uses: actions/upload-artifact@v4
         with:
-          name: installer
-          path: ../deliverables/*.exe
+          name: installer-${{ matrix.platform }}
+          path: ${{ matrix.pattern }}
           if-no-files-found: error

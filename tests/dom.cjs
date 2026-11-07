@@ -34,7 +34,7 @@ async function run(){
   }};
   w.HTMLCanvasElement.prototype.getContext=function(){return {fillRect(){},fillStyle:''};};w.HTMLCanvasElement.prototype.toDataURL=function(){return 'data:image/png;base64,AA==';};
   w.eval(fs.readFileSync(path.join(appDir,'vendor/ethers.umd.min.js'),'utf8'));
-  w.eval(fs.readFileSync(path.join(appDir,'address-book.js'),'utf8'));w.eval(fs.readFileSync(path.join(appDir,'token-presets.js'),'utf8'));w.eval(fs.readFileSync(path.join(appDir,'vendor/ethereum-blockies.js'),'utf8'));w.eval(fs.readFileSync(path.join(appDir,'blockies.js'),'utf8'));w.eval(fs.readFileSync(path.join(appDir,'renderer.js'),'utf8'));global.lastStatus=()=>$('status').textContent;assert.equal($('balance-settings').open,false);assert.equal($('stop').hidden,true);
+  w.eval(fs.readFileSync(path.join(appDir,'address-book.js'),'utf8'));w.eval(fs.readFileSync(path.join(appDir,'token-presets.js'),'utf8'));w.eval(fs.readFileSync(path.join(appDir,'vendor/ethereum-blockies.js'),'utf8'));w.eval(fs.readFileSync(path.join(appDir,'blockies.js'),'utf8'));w.eval(fs.readFileSync(path.join(appDir,'networks.js'),'utf8'));w.eval(fs.readFileSync(path.join(appDir,'renderer.js'),'utf8'));global.lastStatus=()=>$('status').textContent;assert.equal($('balance-settings').open,false);assert.equal($('stop').hidden,true);
   $('address-count').value='100';$('phrase').value='test test test test test test test test test test test junk';$('derive').click();
   await until(()=>$('count').textContent==='299');
   assert.equal(doc.querySelectorAll('#rows tr').length,250);assert.equal($('phrase').value,'');assert.equal($('password').value,'');assert.equal(doc.querySelectorAll('.blockie').length,0);
