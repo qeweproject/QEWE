@@ -1,0 +1,6 @@
+Ethereum Blockies
+Authors: Erin Dachtler, Alex Van de Sande.
+Original upstream blockies.js bundled without changes.
+https://raw.githubusercontent.com/ethereum/blockies/f056afe0594d148ee357261f8932dd37d700abd7/blockies.js
+SHA-256: 5283a72342bb29844e9ec7dc11a415a95fca4047af516728a8dd683bd8781873
+The upstream README declares WTFPL; it is included in full.

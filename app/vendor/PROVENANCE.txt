@@ -1,0 +1,40 @@
+ethers 6.17.0 : ethers.umd.min.js copié du paquet npm officiel.
+wordlists-extra.js : paquet ethers 6.17.0, dist/wordlists-extra.min.js.
+Le mot-clé export ESM est remplacé par une inscription des listes dans
+ethers.wordlists ; le fichier est encapsulé pour importScripts classique.
+Aucun changement aux algorithmes cryptographiques ou aux listes de mots.
+
+Ethereum Blockies : source officielle, commit f056afe0594d148ee357261f8932dd37d700abd7.
+Voir BLOCKIES_NOTICES.txt et BLOCKIES_README.md. Aucun réseau au rendu.
+
+Ledger WebHID : @ledgerhq/hw-transport-webhid 6.36.0, bundle généré par esbuild.
+Transport historique officiel (annoncé non maintenu par son éditeur).
+V2 : lecture E0/02, descriptifs ERC20 signés E0/0A, signature de transferts E0/04.
+Aucune API de signature de messages, approbation ou appel arbitraire ajoutée.
+Dépendances verrouillées dans package-lock.json ; licences dans LEDGER_LICENSES.txt.
+Protocole de lecture : LedgerHQ/ledger-live, hw-app-eth/src/Eth.ts, méthode getAddress.
+
+Ledger ERC20 : descriptifs signés extraits de @ledgerhq/cryptoassets-evm-signatures
+13.7.1 (paquet officiel), 98 descriptifs Ethereum principaux vérifiés ; seuls les contrats configurés
+et sélectionnés sont proposés à la transaction. Les 19 presets initiaux
+restent les mêmes. Sources verrouillées ; fichiers ledger-tokens.json et .js
+générés par scripts/build-ledger-tokens.cjs. Licence MIT dans
+LEDGER_TOKEN_LICENSE.txt. La signature du descriptif est vérifiée par le Ledger.
+Signature de transferts : protocole E0/04 de LedgerHQ hw-app-eth Eth.ts et
+utils.ts ; uniquement des transferts EIP-1559 chaîne 1 tenant en une APDU.
+Ne s'appuie pas sur les anciennes API EIP-712, non utilisées ici.
+
+V2.1 : traductions d'interface FR/EN/ZH/HI/ES/PT/DE/RU écrites et embarquées
+localement. Aucun service de traduction dans l'application.
+Polices Noto Sans SC et Noto Sans Devanagari : sous-ensembles officiels obtenus
+via Google Fonts, polices TrueType embarquées ; licences SIL OFL incluses dans
+fonts/OFL-Chinese.txt et fonts/OFL-Hindi.txt. Aucun chargement réseau de police.
+
+V2.2 : génération BIP39 via Web Crypto getRandomValues et ethers Mnemonic,
+sans copie du site Ian Coleman et sans dépendance à un service en ligne.
+Losange Ethereum : SVG géométrique à facettes, forme de référence Ethereum
+https://ethereum.org/assets/ ; rendu local, sans ressource externe ni affiliation.
+
+QEWE 3.1: ethers/wordlists and WebHID are regenerated from the pinned npm install.
+Token descriptors are a fixed, licensed dataset; no cryptoassets package or
+Axios is executed during building. VENDOR_SHA256.json pins shipped vendor bytes.
