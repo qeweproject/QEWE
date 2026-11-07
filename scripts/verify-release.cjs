@@ -4,6 +4,14 @@ const root=path.resolve(__dirname,'..'),out=path.resolve(root,'../deliverables')
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
 const files=dir=>fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?files(path.join(dir,e.name)):[path.join(dir,e.name)]);
 function run(file,args){const r=spawnSync(file,args,{encoding:'utf8',maxBuffer:8*1024*1024});assert.equal(r.status,0,file+' '+(r.stderr||r.error||''));return r.stdout;}
+// NSIS installers can only be opened by the full 7-Zip (7z.exe). The standalone 7za
+// bundled with app-builder-lib answers "Cannot open the file as archive" for them.
+function sevenZip(){
+ for(const c of [process.env.SEVEN_ZIP,'C:\\Program Files\\7-Zip\\7z.exe','C:\\Program Files (x86)\\7-Zip\\7z.exe','7z'].filter(Boolean)){
+  const r=spawnSync(c,['i'],{encoding:'utf8'});if(r.status===0&&/Nsis/.test(r.stdout))return c;
+ }
+ throw Error('Full 7-Zip (7z) with the NSIS handler is required to verify the Windows installer; set SEVEN_ZIP to its path.');
+}
 (async()=>{
  assert(['win','linux','mac'].includes(platform)&&['arm64','x64'].includes(arch));
  const dir=path.join(out,platform==='win'?'win-unpacked':platform==='linux'?'linux-unpacked':`mac${arch==='arm64'?'-arm64':''}/${name}.app`),res=platform==='mac'?path.join(dir,'Contents/Resources'):path.join(dir,'resources'),archive=path.join(res,'app.asar'),exe=platform==='mac'?path.join(dir,'Contents/MacOS',name):path.join(dir,platform==='win'?name+'.exe':'qewe');
@@ -25,7 +33,7 @@ function run(file,args){const r=spawnSync(file,args,{encoding:'utf8',maxBuffer:8
  try{
   let builtAsar,builtExe;
   if(platform==='win'){
-   const seven=await require('app-builder-lib/out/toolsets/7zip').getPath7za();run(seven,['t',installer]);run(seven,['x',installer,'-o'+temp,'-y']);builtAsar=files(temp).find(f=>f.endsWith(path.join('resources','app.asar')));builtExe=files(temp).find(f=>path.basename(f)===name+'.exe');assert(builtAsar&&builtExe,'Installer payload');
+   const seven=sevenZip();run(seven,['t',installer]);run(seven,['x',installer,'-o'+temp,'-y']);builtAsar=files(temp).find(f=>f.endsWith(path.join('resources','app.asar')));builtExe=files(temp).find(f=>path.basename(f)===name+'.exe');assert(builtAsar&&builtExe,'Installer payload');
   }else if(platform==='linux'){
    assert.equal(run('dpkg-deb',['-f',installer,'Architecture']).trim(),'amd64');run('dpkg-deb',['-x',installer,temp]);builtAsar=files(path.join(temp,'opt')).find(f=>f.endsWith(path.join('resources','app.asar')));assert(builtAsar);builtExe=path.join(path.dirname(path.dirname(builtAsar)),'qewe');
    assert(files(path.join(temp,'usr/share/icons')).some(f=>f.endsWith('.png')&&fs.readFileSync(f).equals(fs.readFileSync(path.join(root,'app/qewe.png')))),'Ubuntu logo');assert(files(path.join(temp,'usr/share/applications')).some(f=>f.endsWith('.desktop')&&fs.readFileSync(f,'utf8').match(/^Icon=qewe$/m)),'Ubuntu launcher');
