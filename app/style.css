@@ -37,3 +37,9 @@ body{user-select:text;-webkit-user-select:text}button,summary,label.check{user-s
 .language-options{max-height:55vh;overflow:auto;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}html[dir=rtl] .right{margin-left:0;margin-right:auto}html[dir=rtl] .send-summary dd{text-align:left}code,.address-value,.address-identity,.tx-counts,#send-from,#send-result-hash,#offline-hash,input[type=url],#phrase,#password,#offline-secret,#offline-password,#send-to,#send-amount,#new-seed-phrase{direction:ltr;unicode-bidi:isolate}.address-identity{justify-content:flex-start}
 @font-face{font-family:QEWEArabic;src:url('vendor/fonts/arabic.ttf')}@font-face{font-family:QEWABengali;src:url('vendor/fonts/bengali.ttf')}@font-face{font-family:QEWEThai;src:url('vendor/fonts/thai.ttf')}@font-face{font-family:QEWEJapanese;src:url('vendor/fonts/japanese.otf')}@font-face{font-family:QEWEKorean;src:url('vendor/fonts/korean.otf')}
 :lang(ar),:lang(ur){font-family:QEWEArabic,'Segoe UI',sans-serif!important}:lang(bn){font-family:QEWABengali,'Segoe UI',sans-serif!important}:lang(th){font-family:QEWEThai,'Segoe UI',sans-serif!important}:lang(ja){font-family:QEWEJapanese,'Segoe UI',sans-serif!important}:lang(ko){font-family:QEWEKorean,'Segoe UI',sans-serif!important}input[type=number],.send-summary dd{direction:ltr;unicode-bidi:isolate}
+/* V3.2 */
+.network-balances{display:block;white-space:pre-line;font-size:.8em;opacity:.85;margin-top:.25rem}
+.network-rpcs{display:grid;gap:.4rem;margin-top:.5rem}
+.network-rpc{display:grid;grid-template-columns:9rem 1fr;align-items:center;gap:.5rem;font-size:.9em}
+.extra-modes{margin-top:.5rem}
+.discovered>div{white-space:pre-line;font-size:.85em;word-break:break-all}

@@ -15,12 +15,12 @@ function controls(){
   $('clear').disabled=busy;
   for(const id of ['phrase','password','language','endpoint','tokens','custom','address-count','recovery-format','pbkdf2-rounds','expand-words','extra-word'])$(id).disabled=busy;
   document.querySelectorAll('input[name=mode]').forEach(e=>e.disabled=busy);
-  document.querySelectorAll('input[name=token],#history,#usd').forEach(e=>e.disabled=busy);
+  document.querySelectorAll('input[name=token],#history,#usd,#discover,#gap,input[name=network],#network-rpcs input').forEach(e=>e.disabled=busy);
 }
 function scheduleRender(){if(!renderTimer)renderTimer=setTimeout(()=>{renderTimer=null;render();},rows.length>1000?250:80);}
-function positive(r){return r&&(BigInt(r.wei||0)>0n||r.tokens.some(t=>BigInt(t.raw||0)>0n));}
-function hasTransactions(r){return !!r&&(BigInt(r.nonce||0)>0n||(r.activity?.status==='ok'&&(BigInt(r.activity.transactions)>0n||BigInt(r.activity.tokenTransfers)>0n)));}
-function visibleRows(){return rows.filter(row=>{const r=results[row.address];return (!$('positive').checked||positive(r))&&(!$('issues').checked||!r||r.status!=='ok')&&(!$('with-tx').checked||hasTransactions(r));});}
+function positive(r){return r&&(BigInt(r.wei||0)>0n||r.tokens.some(t=>BigInt(t.raw||0)>0n)||(r.networks||[]).some(n=>BigInt(n.wei||0)>0n));}
+function hasTransactions(r){return !!r&&(BigInt(r.nonce||0)>0n||(r.networks||[]).some(n=>BigInt(n.nonce||0)>0n)||(r.activity?.status==='ok'&&(BigInt(r.activity.transactions)>0n||BigInt(r.activity.tokenTransfers)>0n)));}
+function visibleRows(){return rows.filter(row=>{const r=results[row.address];return (!$('positive').checked||positive(r))&&(!$('issues').checked||!r||!['ok','skipped'].includes(r.status))&&(!$('with-tx').checked||hasTransactions(r));});}
 async function copyAddresses(addresses,button){
   try{
     const result=await desktop.copyAddresses(addresses);
@@ -66,17 +66,19 @@ function render(){
     actions.append(copy,explorer);window.Transfers?.attach(actions,row);address.append(actions);
     const eth=add(r?.eth??'—',r?.wei&&BigInt(r.wei)>0n?'good':'');
     if(r?.usd){const usd=document.createElement('strong');usd.className='usd-value';usd.textContent=r.usd.micros!==null?'Compte ≈ '+dollars(r.usd.micros):'Compte : $ inconnu';usd.title=r.usd.missing.join('\n')||'ETH + ERC20 contrôlés, cours indicatifs.';eth.append(usd);if(r.usd.partial){const note=document.createElement('span');note.className='usd-partial';note.textContent='Estimation partielle';eth.append(note);}}
+    if(r?.networks?.length){const funded=r.networks.filter(n=>n.status!=='ok'||BigInt(n.wei||0)>0n||BigInt(n.nonce||0)>0n);if(funded.length){const list=document.createElement('div');list.className='network-balances';list.dataset.noI18n='';list.textContent=funded.map(n=>n.status==='ok'?`${n.name}: ${n.balance} ${n.symbol}${BigInt(n.nonce||0)>0n?` · nonce ${n.nonce}`:''}`:`${n.name}: —`).join('\n');list.title=r.networks.map(n=>`${n.name}: ${n.status==='ok'?n.balance+' '+n.symbol:'—'}`).join('\n');eth.append(list);}}
     const tokenCell=add('','token-balances');
-    if(!r)tokenCell.textContent='—';
-    else if(!r.tokens.length)tokenCell.textContent='Non demandé';
+    if(!r||r.status==='skipped')tokenCell.textContent='—';
+    else if(!r.tokens.length)tokenCell.textContent=r.discovered?.length?'':'Non demandé';
     else{
       const funded=r.tokens.filter(t=>BigInt(t.raw||0)>0n),failed=r.tokens.filter(t=>t.status==='error').length;
       const brief=document.createElement('div');brief.textContent=funded.map(t=>`${t.symbol}: ${t.balance}`).join('\n')||`${r.tokens.length-failed} ERC20 à zéro`;brief.className=funded.length?'good':'';tokenCell.append(brief);
       if(failed){const error=document.createElement('div');error.className='error';error.textContent=`${failed} lecture(s) inconnue(s)`;tokenCell.append(error);}
       const details=document.createElement('details'),summary=document.createElement('summary'),values=document.createElement('div');summary.textContent=`Détail des ${r.tokens.length} tokens`;values.textContent=r.tokens.map(t=>`${t.symbol}: ${t.balance??'ERREUR'}`).join('\n');details.append(summary,values);tokenCell.append(details);
     }
+    if(r?.discovered?.length){const found=document.createElement('details'),title=document.createElement('summary'),list=document.createElement('div');found.className='discovered';title.textContent=`${r.discovered.length} tokens/NFT détectés · non vérifiés`;list.dataset.noI18n='';list.textContent=r.discovered.map(t=>`${t.network} · ${t.type} · ${t.symbol}: ${t.balance}\n${t.address}`).join('\n');found.append(title,list);tokenCell.append(found);}
     add(r?`Envois : ${r.nonce??'—'}\nTx indexées : ${r.activity?.transactions??'—'}\nTransferts : ${r.activity?.tokenTransfers??'—'}`:'—','tx-counts');
-    add(!r?'Non contrôlé':r.status==='ok'?'Vérifié':r.status==='partial'?'Incomplet':'Erreur',r?.status==='ok'?'good':r?'error':'muted');
+    add(!r?'Non contrôlé':r.status==='skipped'?'Ignorée · adresses vides':r.status==='ok'?'Vérifié':r.status==='partial'?'Incomplet':'Erreur',r?.status==='ok'?'good':r&&r.status!=='skipped'?'error':'muted');
     body.append(tr);
   }
 }
@@ -134,15 +136,17 @@ if($('ledger-read'))$('ledger-read').addEventListener('click',async()=>{
 });
 $('refresh-block').addEventListener('click',()=>{if(!busy&&rows.length)$('scan').click();});
 $('scan').addEventListener('click',async()=>{
-  const endpoint=$('endpoint').value.trim(),history=$('history').checked,usd=$('usd').checked;let tokens;
+  const endpoint=$('endpoint').value.trim(),history=$('history').checked,usd=$('usd').checked,discover=$('discover').checked,gap=Number($('gap').value||0);let tokens,networks;
+  if(!Number.isInteger(gap)||gap<0||gap>1000){status('Choisissez un entier entre 0 et 1000 pour l’arrêt sur adresses vides.',true);return;}
   try{
     tokens=[...new Set([...document.querySelectorAll('input[name=token]:checked')].map(e=>e.value).concat($('tokens').value.split(/[\s,;]+/).filter(Boolean)).map(a=>ethers.getAddress(a)))];
-    const url=new URL(endpoint);
-    if(url.protocol!=='https:'&&!(url.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(url.hostname)))throw Error();
+    const allowed=value=>{const url=new URL(value);if(url.protocol!=='https:'&&!(url.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(url.hostname)))throw Error();return value;};
+    allowed(endpoint);
+    networks=[...document.querySelectorAll('input[name=network]:checked')].map(e=>({id:e.value,endpoint:allowed($('net-rpc-'+e.value).value.trim()||EvmNetworks.byId(e.value).rpc)}));
     if(tokens.length>50||tokens.some(a=>!/^0x[0-9a-fA-F]{40}$/.test(a)))throw Error();
   }catch{status('RPC HTTPS et contrats Ethereum 0x… valides requis (50 maximum).',true);return;}
   results={};block='';done=0;pricing=null;busy=true;scanning=true;controls();render();status('Vérification du réseau Ethereum et du bloc…');
-  try{const response=await desktop.scan({endpoint,rows,tokens,history,usd});if(response.error)throw Error(response.error);}
+  try{const response=await desktop.scan({endpoint,rows,tokens,history,usd,networks,discover,gap});if(response.error)throw Error(response.error);}
   catch(error){busy=false;scanning=false;controls();status(error.message,true);}
 });
 $('stop').addEventListener('click',async()=>{
@@ -155,10 +159,11 @@ $('stop').addEventListener('click',async()=>{
 });
 desktop.onScan(message=>{
   if(message.type==='start'){block=message.block;pricing=message.pricing;status(`Contrôle de ${message.unique} adresses uniques au bloc ${BigInt(block)}…`);render();}
+  if(message.type==='skipped'){for(const address of message.addresses)results[address]={address,status:'skipped',tokens:[],wei:null,nonce:null};done=message.done;status(`Contrôle en cours : ${done} / ${message.total} adresses.`);scheduleRender();}
   if(message.type==='result'){results[message.result.address]=message.result;done=message.done;status(`Contrôle en cours : ${done} / ${message.total} adresses.`);scheduleRender();}
   if(['complete','failure','cancelled'].includes(message.type)){
     busy=false;scanning=false;controls();render();
-    const errors=Object.values(results).filter(r=>r.status!=='ok').length;
+    const errors=Object.values(results).filter(r=>!['ok','skipped'].includes(r.status)).length;
     status(message.type==='complete'?`Contrôle terminé : ${done} adresses, ${errors} avec contrôle incomplet. Les totaux portent uniquement sur les valeurs obtenues.`:message.error,message.type!=='complete'||errors>0);
   }
 });
@@ -183,6 +188,13 @@ $('file').addEventListener('change',async()=>{
   }catch{status('Import impossible. Utilisez un export JSON de cette application ou un fichier TXT contenant uniquement des adresses 0x… (40000 maximum).',true);}
   finally{$('file').value='';}
 });
+for(const net of EvmNetworks.NETWORKS){
+  const label=document.createElement('label');label.className='check token-choice';label.title=`chainId ${net.chainId} · ${net.symbol}`;
+  const input=document.createElement('input');input.type='checkbox';input.name='network';input.value=net.id;
+  label.append(input,document.createTextNode(net.name));$('network-choices').append(label);
+  const rpc=document.createElement('input');rpc.type='url';rpc.id='net-rpc-'+net.id;rpc.placeholder=net.rpc;rpc.spellcheck=false;rpc.autocomplete='off';rpc.setAttribute('aria-label',net.name+' RPC');
+  const row=document.createElement('label');row.className='network-rpc';row.dataset.noI18n='';row.append(document.createTextNode(net.name),rpc);$('network-rpcs').append(row);
+}
 const presets=$('token-presets');
 for(const token of TokenPresets){
   const label=document.createElement('label');label.className='check token-choice';label.title=token.address;

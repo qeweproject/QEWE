@@ -58,8 +58,48 @@ async function activityCounters(address,signal,fetcher=fetch){
   const count=value=>{if(!/^\d{1,30}$/.test(String(value)))throw Error('Compteur invalide.');return BigInt(value).toString();};
   return {status:'ok',transactions:count(data.transactions_count),tokenTransfers:count(data.token_transfers_count),checkedAt:new Date().toISOString()};
 }
-async function scan({endpoint,rows,tokens,history=false,usd=false},signal,emit,fetcher){
-  endpoint=endpointUrl(endpoint);rows=validateRows(rows);tokens=tokenAddresses(tokens);
+const NET=require('./networks.js');
+/* Optional extra EVM networks: [{id, endpoint}] from the main process. Same addresses, native asset only. */
+function networkRequests(list){
+  if(list===undefined||list===null)return [];
+  if(!Array.isArray(list)||list.length>NET.NETWORKS.length)throw Error('Réseaux invalides.');
+  const seen=new Set();
+  return list.map(item=>{
+    const net=NET.byId(item?.id);
+    if(!net||seen.has(net.id))throw Error('Réseau inconnu.');seen.add(net.id);
+    return {...net,endpoint:endpointUrl(item.endpoint||net.rpc)};
+  });
+}
+function gapLimit(value){if(value===undefined||value===null||value===0)return 0;if(!Number.isInteger(value)||value<1||value>1000)throw Error('Limite d’adresses vides : entier entre 0 et 1000.');return value;}
+const clean=(value,max=24)=>String(value??'').replace(/[^a-zA-Z0-9_.$ -]/g,'').trim().slice(0,max);
+/* Blockscout discovery: every ERC20/NFT the indexer knows for this address. Untrusted, display only. */
+async function discoverTokens(base,address,network,signal,fetcher=fetch){
+  address=validateRows([{address}])[0].address;
+  const response=await fetcher(base+'/api/v2/addresses/'+address+'/tokens?type=ERC-20%2CERC-721%2CERC-1155',{method:'GET',redirect:'error',headers:{Accept:'application/json'},signal:AbortSignal.any([signal,AbortSignal.timeout(15000)])});
+  if(response.status===404)return [];
+  if(!response.ok)throw Error('Détection indisponible.');
+  const data=JSON.parse(await readText(response,524288));
+  if(!data||!Array.isArray(data.items))throw Error('Détection invalide.');
+  const out=[];
+  for(const item of data.items.slice(0,100)){
+    const t=item?.token||{};let contract;
+    try{contract=getAddress(t.address_hash||t.address);}catch{continue;}
+    const type=['ERC-20','ERC-721','ERC-1155'].includes(t.type)?t.type:null;if(!type)continue;
+    const raw=/^\d{1,78}$/.test(String(item.value??''))?String(item.value):null;if(raw===null||raw==='0')continue;
+    const decimals=type==='ERC-20'&&/^\d{1,2}$/.test(String(t.decimals??''))?Number(t.decimals):0;
+    let balance=raw;try{balance=formatUnits(raw,decimals);}catch{}
+    out.push({network,address:contract,type,symbol:clean(t.symbol)||contract.slice(0,10),name:clean(t.name,40),raw,balance});
+  }
+  return out;
+}
+function used(r){
+  if(!r||r.status!=='ok')return true; // unknown = treat as used, never skip on errors
+  const pos=v=>v!==null&&v!==undefined&&BigInt(v)>0n;
+  return pos(r.wei)||pos(r.nonce)||r.tokens.some(t=>pos(t.raw))||(r.networks||[]).some(n=>pos(n.wei)||pos(n.nonce))||
+    (r.activity?.status==='ok'&&(pos(r.activity.transactions)||pos(r.activity.tokenTransfers)))||(r.discovered||[]).length>0;
+}
+async function scan({endpoint,rows,tokens,history=false,usd=false,networks=[],discover=false,gap=0},signal,emit,fetcher){
+  endpoint=endpointUrl(endpoint);rows=validateRows(rows);tokens=tokenAddresses(tokens);networks=networkRequests(networks);gap=gapLimit(gap);discover=discover===true;
   const unique=[...new Set(rows.map(r=>r.address))];
   // One RPC instance per concurrent worker so IDs cannot race.
   const initial=createRpc(endpoint,signal,fetcher);
@@ -81,16 +121,25 @@ async function scan({endpoint,rows,tokens,history=false,usd=false},signal,emit,f
       metadata.push({address,decimals,symbol,status:'ok'});
     }catch{signal.throwIfAborted();metadata.push({address,status:'error',symbol});}
   }
+  // Extra networks: a wrong chain or unreachable RPC marks only that network as failed.
+  const nets=[];
+  for(const net of networks){
+    const entry={id:net.id,name:net.name,symbol:net.symbol,chainId:net.chainId,endpoint:net.endpoint,blockscout:net.blockscout,price:net.price,status:'ok',block:null};
+    try{
+      const rpc=createRpc(net.endpoint,signal,fetcher);
+      if(quantity(await rpc('eth_chainId'))!==BigInt(net.chainId))throw Error('chainId');
+      entry.block=await rpc('eth_blockNumber');quantity(entry.block);
+    }catch{signal.throwIfAborted();entry.status='error';}
+    nets.push(entry);
+  }
   let snapshot=null;
-  if(usd)try{snapshot=await fetchPrices(tokens,signal,fetcher);}catch{signal.throwIfAborted();snapshot={prices:{},source:'DefiLlama',fetchedAt:new Date().toISOString()};}
-  emit({type:'start',block,unique:unique.length,tokens:metadata,pricing:snapshot?{source:snapshot.source,fetchedAt:snapshot.fetchedAt,pricedAssets:Object.keys(snapshot.prices).length}:null});
-  let cursor=0,done=0;
-  async function runner(){
-    const rpc=createRpc(endpoint,signal,fetcher);
-    while(cursor<unique.length){
-      signal.throwIfAborted();const address=unique[cursor++];
-      const result={address,eth:null,wei:null,nonce:null,tokens:[],activity:null,status:'ok'};
-      try{result.wei=quantity(await rpc('eth_getBalance',[address,block])).toString();result.eth=formatEther(result.wei);}catch{signal.throwIfAborted();result.status='error';}
+  if(usd)try{snapshot=await fetchPrices(tokens,signal,fetcher,Date.now(),nets.filter(n=>n.status==='ok').map(n=>n.price));}catch{signal.throwIfAborted();snapshot={prices:{},source:'DefiLlama',fetchedAt:new Date().toISOString()};}
+  emit({type:'start',block,unique:unique.length,tokens:metadata,networks:nets.map(({id,name,symbol,status})=>({id,name,symbol,status})),pricing:snapshot?{source:snapshot.source,fetchedAt:snapshot.fetchedAt,pricedAssets:Object.keys(snapshot.prices).length}:null});
+  const discoverySources=discover?[{id:'ethereum',base:NET.MAINNET.blockscout},...nets.filter(n=>n.status==='ok'&&n.blockscout).map(n=>({id:n.id,base:n.blockscout}))]:[];
+  async function scanAddress(address,rpc,netRpcs){
+    signal.throwIfAborted();
+    const result={address,eth:null,wei:null,nonce:null,tokens:[],activity:null,status:'ok'};
+    try{result.wei=quantity(await rpc('eth_getBalance',[address,block])).toString();result.eth=formatEther(result.wei);}catch{signal.throwIfAborted();result.status='error';}
       try{result.nonce=quantity(await rpc('eth_getTransactionCount',[address,block])).toString();}catch{signal.throwIfAborted();result.status='partial';}
       let balances=null;
       const valid=metadata.filter(t=>t.status==='ok');
@@ -114,20 +163,65 @@ async function scan({endpoint,rows,tokens,history=false,usd=false},signal,emit,f
         try{result.activity=await activityCounters(address,signal,fetcher);}
         catch{signal.throwIfAborted();result.activity={status:'error',transactions:null,tokenTransfers:null};if(result.status==='ok')result.status='partial';}
       }
-      if(snapshot){result.usd=estimateUsd(result,snapshot);if(result.usd.partial&&result.status==='ok')result.status='partial';}
-      emit({type:'result',result,done:++done,total:unique.length});
+    if(nets.length){
+      result.networks=[];
+      for(const n of nets){
+        const entry={id:n.id,name:n.name,symbol:n.symbol,price:n.price,wei:null,balance:null,nonce:null,status:n.status};
+        if(n.status==='ok'){
+          try{entry.wei=quantity(await netRpcs.get(n.id)('eth_getBalance',[address,n.block])).toString();entry.balance=formatEther(entry.wei);
+            entry.nonce=quantity(await netRpcs.get(n.id)('eth_getTransactionCount',[address,n.block])).toString();}
+          catch{signal.throwIfAborted();entry.status='error';}
+        }
+        if(entry.status!=='ok'&&result.status==='ok')result.status='partial';
+        result.networks.push(entry);
+      }
     }
+    if(discoverySources.length){
+      result.discovered=[];result.discoveryStatus='ok';
+      const known=new Set(metadata.map(t=>t.address.toLowerCase()));
+      for(const source of discoverySources){
+        try{for(const t of await discoverTokens(source.base,address,source.id,signal,fetcher))if(!(source.id==='ethereum'&&known.has(t.address.toLowerCase())))result.discovered.push(t);}
+        catch{signal.throwIfAborted();result.discoveryStatus='partial';}
+      }
+      if(result.discoveryStatus!=='ok'&&result.status==='ok')result.status='partial';
+    }
+    if(snapshot){result.usd=estimateUsd(result,snapshot);if(result.usd.partial&&result.status==='ok')result.status='partial';}
+    return result;
   }
-  await Promise.all(Array.from({length:3},runner));
+  const workerRpcs=()=>[createRpc(endpoint,signal,fetcher),new Map(nets.filter(n=>n.status==='ok').map(n=>[n.id,createRpc(n.endpoint,signal,fetcher)]))];
+  let done=0;
+  async function pool(list,onResult){
+    let cursor=0;
+    await Promise.all(Array.from({length:Math.min(3,list.length)},async()=>{
+      const [rpc,netRpcs]=workerRpcs();
+      while(cursor<list.length){const address=list[cursor++];const result=await scanAddress(address,rpc,netRpcs);onResult?.(address,result);emit({type:'result',result,done:++done,total:unique.length});}
+    }));
+  }
+  if(!gap){await pool(unique);emit({type:'complete',block});return;}
+  // Gap limit: indexes are scanned level by level, so a stop decision always sees every lower index.
+  // A path stops after `gap` consecutive unused indexes; imported addresses (no index) are always scanned.
+  const byAddress=new Map(rows.map(r=>[r.address,r]));
+  const level=a=>Math.min(...byAddress.get(a).derivations.map(d=>d.index??-1));
+  const ordered=[...unique].sort((x,y)=>level(x)-level(y));
+  const last=new Map(),stopped=d=>d.index!==null&&d.index>(last.get(d.mode)??-1)+gap;
+  let skipped=[];
+  const flush=()=>{if(skipped.length){done+=skipped.length;emit({type:'skipped',addresses:skipped,done,total:unique.length});skipped=[];}};
+  for(let i=0;i<ordered.length;){
+    signal.throwIfAborted();
+    const lv=level(ordered[i]);let j=i;while(j<ordered.length&&level(ordered[j])===lv)j++;
+    const todo=[];for(const a of ordered.slice(i,j))(byAddress.get(a).derivations.every(stopped)?skipped:todo).push(a);i=j;
+    if(todo.length){flush();await pool(todo,(address,result)=>{if(used(result))for(const d of byAddress.get(address).derivations)if(d.index!==null)last.set(d.mode,Math.max(last.get(d.mode)??-1,d.index));});}
+  }
+  flush();
   emit({type:'complete',block});
 }
 function csv(rows,results,block){
   const q=v=>{let text=String(v??'');if(/^[\s\u0000-\u001f]*[=+@-]/u.test(text))text="'"+text;return '"'+text.replace(/"/g,'""')+'"';};
-  const records=[['mode','index','chemin','adresse','ETH','wei','transactions_sortantes','statut','ERC20_controles','bloc','transactions_indexees','transferts_tokens_indexes','historique_statut','historique_verifie_a','USD_estime','USD_partiel','USD_cours_date']];
+  const records=[['mode','index','chemin','adresse','ETH','wei','transactions_sortantes','statut','ERC20_controles','bloc','transactions_indexees','transferts_tokens_indexes','historique_statut','historique_verifie_a','USD_estime','USD_partiel','USD_cours_date','autres_reseaux','tokens_detectes_non_verifies']];
   for(const row of validateRows(rows)){
     const r=results[row.address];
-    records.push([row.derivations.map(a=>a.mode).join(' | '),row.derivations.map(a=>a.index??'').join(' | '),row.derivations.map(a=>a.path).join(' | '),row.address,r?.eth??'',r?.wei??'',r?.nonce??'',r?.status??'non contrôlé',r?.tokens.map(t=>`${t.address} ${t.symbol}: ${t.balance??'ERREUR'}`).join(' | ')??'',block??'',r?.activity?.transactions??'',r?.activity?.tokenTransfers??'',r?.activity?.status??'non demandé',r?.activity?.checkedAt??'',r?.usd?.value??'',r?.usd?.partial??'',r?.usd?.fetchedAt??'']);
+    records.push([row.derivations.map(a=>a.mode).join(' | '),row.derivations.map(a=>a.index??'').join(' | '),row.derivations.map(a=>a.path).join(' | '),row.address,r?.eth??'',r?.wei??'',r?.nonce??'',r?.status??'non contrôlé',r?.tokens.map(t=>`${t.address} ${t.symbol}: ${t.balance??'ERREUR'}`).join(' | ')??'',block??'',r?.activity?.transactions??'',r?.activity?.tokenTransfers??'',r?.activity?.status??'non demandé',r?.activity?.checkedAt??'',r?.usd?.value??'',r?.usd?.partial??'',r?.usd?.fetchedAt??'',(r?.networks||[]).map(n=>`${n.name}: ${n.status==='ok'?`${n.balance} ${n.symbol} (nonce ${n.nonce})`:'ERREUR'}`).join(' | '),(r?.discovered||[]).map(t=>`${t.network} ${t.type} ${t.address} ${t.symbol}: ${t.balance}`).join(' | ')]);
   }
   return '\ufeff'+records.map(r=>r.map(q).join(';')).join('\r\n');
 }
-module.exports={validateRows,endpointUrl,tokenAddresses,createRpc,scan,csv,activityCounters,aggregateReads};
+module.exports={validateRows,endpointUrl,tokenAddresses,createRpc,scan,csv,activityCounters,aggregateReads,networkRequests,gapLimit,discoverTokens,used};

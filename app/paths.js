@@ -3,7 +3,13 @@
  const MODES={
   live:{name:'Ledger Live / MEW',path:i=>`m/44'/60'/${i}'/0/0`},
   legacy:{name:'Ledger Legacy / MEW',path:i=>`m/44'/60'/0'/${i}`},
-  standard:{name:'BIP44 / MetaMask / MEW',path:i=>`m/44'/60'/0'/0/${i}`}
+  standard:{name:'BIP44 / MetaMask / MEW',path:i=>`m/44'/60'/0'/0/${i}`},
+  // Historical paths offered by MyEtherWallet/MyCrypto: funds sent while the wrong network/path was selected.
+  etc:{name:'Ethereum Classic / MEW',path:i=>`m/44'/61'/0'/0/${i}`,extra:true},
+  etcLive:{name:'Ledger Live ETC',path:i=>`m/44'/61'/${i}'/0/0`,extra:true},
+  etcLedger:{name:'Ledger ETC / MEW',path:i=>`m/44'/60'/160720'/0/${i}`,extra:true},
+  testnet:{name:'Testnet / MEW',path:i=>`m/44'/1'/0'/0/${i}`,extra:true},
+  rsk:{name:'RSK / MEW',path:i=>`m/44'/137'/0'/0/${i}`,extra:true}
  };
  function indexes(path){
   if(typeof path!=='string'||path.length>120||!/^m(?:\/\d+'?){1,8}$/.test(path))throw Error('Chemin invalide : m/… avec 1 à 8 niveaux.');

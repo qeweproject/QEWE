@@ -2,7 +2,7 @@ const {app,BrowserWindow,ipcMain,dialog,session,clipboard,shell,Menu}=require('e
 const path=require('node:path');
 const fs=require('node:fs/promises');
 const {pathToFileURL,fileURLToPath}=require('node:url');
-const {scan,validateRows,endpointUrl,tokenAddresses,csv}=require('./core.cjs');
+const {scan,validateRows,endpointUrl,tokenAddresses,csv,networkRequests,gapLimit}=require('./core.cjs');
 const {TransferManager,catalog}=require('./transfers.cjs');
 const appFetch=(...args)=>{if(offlineOnly)throw Error('Mode hors ligne actif : appels réseau bloqués.');return globalThis.fetch(...args);};
 const {OfflineManager,unsignedEnvelope}=require('./offline.cjs');let offlineOnly=false;const offline=new OfflineManager({fetcher:appFetch,allowedAssets:()=>preferences?preferences.catalog():catalog()});
@@ -21,7 +21,8 @@ app.on('web-contents-created',(_event,contents)=>{contents.setWindowOpenHandler(
 // Security: the renderer handles seeds; the main process is the only one allowed to reach the network.
 // A compromised renderer (e.g. tampered vendored code) could otherwise smuggle a secret inside an RPC URL.
 // Every new RPC URL must therefore be confirmed by the user in a native dialog the renderer cannot drive.
-const approvedEndpoints=new Set([endpointUrl('https://ethereum-rpc.publicnode.com')]);let approving=false;
+const NET=require('./networks.js');
+const approvedEndpoints=new Set([NET.MAINNET.rpc,...NET.NETWORKS.map(n=>n.rpc)].map(endpointUrl));let approving=false;
 async function approveEndpoint(value){
   const href=endpointUrl(value);if(approvedEndpoints.has(href))return href;
   if(!win||win.isDestroyed())throw Error('Fenêtre indisponible.');
@@ -119,19 +120,20 @@ app.whenReady().then(async()=>{
   ipcMain.handle('scan',async(e,request)=>{
     trusted(e);if(offlineOnly)return {error:'Mode hors ligne actif : appels réseau bloqués.'};
     if(controller||transferWork||ledgerAllowed)return {error:'Une lecture Ledger ou un contrôle est déjà en cours.'};
-    let endpoint;try{endpoint=await approveEndpoint(request?.endpoint);}catch(err){return {error:err.message||'URL RPC invalide.'};}
+    let endpoint,networks;try{endpoint=await approveEndpoint(request?.endpoint);networks=networkRequests(request?.networks);for(const n of networks)n.endpoint=await approveEndpoint(n.endpoint);}catch(err){return {error:err.message||'URL RPC invalide.'};}
     if(controller||transferWork||ledgerAllowed||offlineOnly)return {error:'Une lecture Ledger ou un contrôle est déjà en cours.'};
     try{
-      const rows=validateRows(request.rows),tokens=tokenAddresses(request.tokens),history=request.history===true,usd=request.usd===true;
+      const rows=validateRows(request.rows),tokens=tokenAddresses(request.tokens),history=request.history===true,usd=request.usd===true,discover=request.discover===true,gap=gapLimit(request.gap);
       results={};currentRows=rows;block='';controller=new AbortController();const active=controller;
       const emit=message=>{
         if(message.type==='start')block=message.block;
         if(message.type==='result')results[message.result.address]=message.result;
+        if(message.type==='skipped')for(const address of message.addresses)results[address]={address,status:'ignorée (adresses vides)',tokens:[]};
         if(win&&!win.isDestroyed())win.webContents.send('scan-event',message);
       };
       // Run after accepting IPC. Secrets never enter this process.
       setImmediate(async()=>{
-        try{await scan({endpoint,rows,tokens,history,usd},active.signal,emit,appFetch);}catch(err){emit({type:active.signal.aborted?'cancelled':'failure',error:active.signal.aborted?'Contrôle arrêté.':err.message});}
+        try{await scan({endpoint,rows,tokens,history,usd,networks:networks.map(n=>({id:n.id,endpoint:n.endpoint})),discover,gap},active.signal,emit,appFetch);}catch(err){emit({type:active.signal.aborted?'cancelled':'failure',error:active.signal.aborted?'Contrôle arrêté.':err.message});}
         finally{active.abort();if(controller===active)controller=null;}
       });
       return {ok:true};
