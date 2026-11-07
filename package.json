@@ -98,7 +98,7 @@
         "dmg"
       ],
       "category": "public.app-category.finance",
-      "hardenedRuntime": true,
+      "hardenedRuntime": false,
       "identity": "-",
       "artifactName": "Quick_Ethereum_Wallet_Explorer_macOS_${version}_${arch}.${ext}"
     }

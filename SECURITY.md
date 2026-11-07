@@ -38,7 +38,8 @@ Renderer/network boundary:
 Remaining boundaries:
 
 - RPCs, token contracts and price/history services can lie, fail, or correlate
-  public addresses. A successful simulation cannot guarantee future execution.
+  public addresses. Enabling extra networks or token discovery sends the
+  checked public addresses to those networks' RPCs and to Blockscout. A successful simulation cannot guarantee future execution.
 - Computer malware can observe local secrets or replace an unsigned program.
 - Ledger WebHID package 6.36.0 is deprecated/unmaintained upstream. No currently
   reported vulnerability is assumed to make it trustworthy. A migration to the

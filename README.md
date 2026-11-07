@@ -2,9 +2,11 @@
 
 **Ethereum Wallet Analysis & Offline Signing Tool**
 
-Windows 11 x64 desktop utility for Ethereum mainnet. Ledger USB comes first:
-read public addresses across Ledger Live, Legacy, BIP44 and custom paths, inspect
-ETH/ERC20 balances, and prepare explicit transfers. Software phrase/key reading
+Desktop utility (Windows 11 x64; Linux and macOS builds in preparation) that finds
+forgotten Ethereum funds. Ledger USB comes first: read public addresses across
+Ledger Live, Legacy, BIP44, historical MEW and custom paths, inspect ETH/ERC20
+balances on Ethereum and native balances on major EVM networks, and prepare
+explicit Ethereum mainnet transfers. Software phrase/key reading
 and local BIP39 generation are secondary tools. Software signing is restricted
 to the explicit offline transaction flow.
 
@@ -16,7 +18,31 @@ simulated Ledger. No physical Ledger or Windows 11 execution test has been
 performed by the build environment. Do not describe this as certified or safe
 for important funds. Start with public addresses and disposable test wallets.
 
+## Why QEWE?
+
+The same recovery phrase gives completely different addresses depending on the
+derivation path a wallet used: Ledger Live, Ledger Legacy, MetaMask/Trezor
+(BIP44), old MyEtherWallet options, Ethereum Classic paths... and the same
+address can hold funds on Arbitrum, Base or Optimism that Ethereum explorers do
+not show. QEWE checks all of these at once, from your Ledger without exposing
+your seed, and tells you where your funds are.
+
+![Main window](docs/screenshots/overview.png)
+![Results with balances on several networks (demo data)](docs/screenshots/results.png)
+
 ## Main features
+
+- **Multi-network check** (opt-in): native balance and nonce of every address on
+  Arbitrum One, Base, OP Mainnet, Polygon PoS, BNB Smart Chain and Gnosis, with
+  default public RPCs or your own. Transactions remain Ethereum mainnet only.
+- **Stop after N empty addresses** per path (gap limit), so you can ask for 1,000
+  addresses per path and only check what matters.
+- **Historical paths** offered by MyEtherWallet/MyCrypto: Ethereum Classic,
+  Ledger Live ETC, Ledger ETC, testnet and RSK, for funds sent while the wrong
+  path or network was selected.
+- **Full token and NFT discovery** (opt-in) through Blockscout indexers. Results
+  are display-only and unverified: airdropped spam tokens are common, never
+  interact with an unknown token contract.
 
 - 25 addresses per path initially, adjustable from 1 to 10,000; shared addresses
   retain their derivation associations. Tables show 250 rows per page.
@@ -59,7 +85,12 @@ Node options and inspector switches, enables ASAR validation and only loads the
 packaged ASAR. These controls do not protect against a fully compromised computer
 or an attacker who can replace the unsigned executable itself.
 
-See [SECURITY.md](SECURITY.md) and [SECURITY_REVIEW.md](SECURITY_REVIEW.md).
+See [SECURITY.md](SECURITY.md), [SECURITY_REVIEW.md](SECURITY_REVIEW.md) and
+[AUDIT_SECURITE_2026-11.md](AUDIT_SECURITE_2026-11.md) (French).
+
+**Download only from this repository's Releases page, and verify the file:**
+see [docs/VERIFY.md](docs/VERIFY.md). Copies of wallet tools with stolen names
+are a common way to steal recovery phrases.
 
 ## Run from source
 
@@ -89,12 +120,23 @@ For the Linux headless integration tests, use `npm run test:native` and run
 libraries needed by Electron must be available. No sandbox-disabling flag should
 be added to make a test pass.
 
-## Build Windows
+## Build
 
 ```sh
-npm run build
-npm run verify:release
+npm run build              # Windows NSIS installer
+npm run verify:release     # or: verify:release -- linux / -- mac
+npm run build:linux        # AppImage (x64)
+npm run build:mac          # dmg (Apple Silicon, ad-hoc signed)
 ```
+
+Tagged releases are built by `.github/workflows/release.yml` on all three
+platforms with SHA256 sums and GitHub build-provenance attestations. See
+[docs/RELEASING.md](docs/RELEASING.md) for code signing.
+
+Linux note: Electron's sandbox needs unprivileged user namespaces. Some
+distributions (Ubuntu 24.04+) restrict them for AppImages through AppArmor; do
+not work around this with `--no-sandbox`. Use a distribution profile that allows
+the AppImage, or build from source.
 
 Output goes to `../deliverables`. The builder uses the pinned official Electron
 runtime and NSIS tooling, which may be downloaded over HTTPS during building.

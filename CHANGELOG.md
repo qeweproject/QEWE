@@ -1,3 +1,22 @@
+# Unreleased — 3.2.0 features
+
+- Optional native balance and nonce check on Arbitrum One, Base, OP Mainnet,
+  Polygon PoS, BNB Smart Chain and Gnosis for every address (same address on
+  every EVM network). Default public RPCs are pre-approved; custom RPCs need the
+  native confirmation. Included in USD estimates when a quote is available.
+  Transactions stay Ethereum mainnet only.
+- Stop after N unused indexes per derivation path (gap limit, 0 = off). Indexes
+  are checked level by level so a stop decision always sees every lower index;
+  errors count as used; imported addresses are always checked.
+- Historical MyEtherWallet/MyCrypto paths (opt-in): Ethereum Classic, Ledger Live
+  ETC, Ledger ETC, testnet, RSK.
+- Optional Blockscout discovery of all ERC20/ERC721/ERC1155 holdings, sanitized,
+  display-only, excluded from the "positive balance" filter and USD estimate.
+- CSV export: other networks and discovered tokens columns.
+- Linux AppImage and macOS dmg build targets; release workflow builds and
+  attests all three platforms; `verify-release` accepts `win|linux|mac`.
+- README features/screenshots, `docs/VERIFY.md`, `docs/RELEASING.md`.
+
 # Unreleased — security review follow-up
 
 - RPC URLs now require a one-time native confirmation per session (main

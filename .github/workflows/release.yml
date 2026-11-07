@@ -20,15 +20,15 @@ jobs:
           - os: windows-latest
             platform: win
             script: build
-            pattern: ../deliverables/*.exe
+            file: '*.exe'
           - os: ubuntu-24.04
             platform: linux
             script: build:linux
-            pattern: ../deliverables/*.AppImage
+            file: '*.AppImage'
           - os: macos-latest
             platform: mac
             script: build:mac
-            pattern: ../deliverables/*.dmg
+            file: '*.dmg'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     permissions:
@@ -50,16 +50,17 @@ jobs:
       - run: node node_modules/esbuild/install.js
       - run: npm run ${{ matrix.script }}
       - run: node scripts/verify-release.cjs ${{ matrix.platform }}
-      - name: SHA256 of the installer
+      - name: Collect installer and print SHA256
         shell: bash
         run: |
-          cd ../deliverables
-          for f in *.exe *.AppImage *.dmg; do [ -f "$f" ] && (sha256sum "$f" 2>/dev/null || shasum -a 256 "$f"); done
+          mkdir -p release-files
+          cp ../deliverables/${{ matrix.file }} release-files/
+          cd release-files && (sha256sum * 2>/dev/null || shasum -a 256 *)
       - uses: actions/attest-build-provenance@v2
         with:
-          subject-path: ${{ matrix.pattern }}
+          subject-path: release-files/*
       - uses: actions/upload-artifact@v4
         with:
           name: installer-${{ matrix.platform }}
-          path: ${{ matrix.pattern }}
+          path: release-files/*
           if-no-files-found: error
