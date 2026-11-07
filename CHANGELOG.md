@@ -1,4 +1,4 @@
-# Unreleased — 3.2.0 features
+# 3.2.0 — features
 
 - Optional native balance and nonce check on Arbitrum One, Base, OP Mainnet,
   Polygon PoS, BNB Smart Chain and Gnosis for every address (same address on

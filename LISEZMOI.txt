@@ -1,4 +1,4 @@
-QEWE 3.1.0 — Quick Ethereum Wallet Explorer — Windows 11 x64
+QEWE 3.2.0 — Quick Ethereum Wallet Explorer — Windows 11 x64
 Ethereum Wallet Analysis & Offline Signing Tool
 
 Cette version candidate ajoute des corrections de sécurité. Aucun audit
@@ -6,7 +6,7 @@ indépendant ni essai sur un Ledger physique ou une vraie session Windows 11
 n'a été réalisé ici. Les tests utilisent des portefeuilles publics de test.
 
 INSTALLER
-Fermer QEWE, puis lancer l'installateur 3.1.0. Installation personnelle, sans
+Fermer QEWE, puis lancer l'installateur 3.2.0. Installation personnelle, sans
 élévation administrateur, avec raccourcis. Le programme n'est pas signé par
 un certificat d'éditeur. Ne désactivez pas vos protections pour l'installer.
 L'anglais est initial ; globe en haut à droite pour le français ou 19 autres

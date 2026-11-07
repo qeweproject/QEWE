@@ -1,4 +1,4 @@
-# QEWE 3.1.0 — review record
+# QEWE 3.2.0 — review record
 
 This is a limited engineering review and security-hardening candidate. It is not
 an independent audit, a malware-free certificate or a claim that every issue has

@@ -47,7 +47,7 @@ Section "Installation"
   CreateShortCut "$SMPROGRAMS\Quick Ethereum Wallet Explorer\Désinstaller.lnk" "$INSTDIR\Desinstaller.exe"
   WriteRegStr HKCU "Software\EthereumAdresses" "InstallDir" "$INSTDIR"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EthereumAdresses" "DisplayName" "Quick Ethereum Wallet Explorer"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EthereumAdresses" "DisplayVersion" "3.1.0"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EthereumAdresses" "DisplayVersion" "3.2.0"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EthereumAdresses" "UninstallString" '$\"$INSTDIR\Desinstaller.exe$\"'
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EthereumAdresses" "DisplayIcon" "$INSTDIR\Quick Ethereum Wallet Explorer.exe"
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\EthereumAdresses" "NoModify" 1

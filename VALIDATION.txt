@@ -1,4 +1,4 @@
-QEWE 3.1.0 — SECURITY-HARDENING CANDIDATE
+QEWE 3.2.0 — SECURITY-HARDENING CANDIDATE
 
 Observed checks on 2026-11-07:
 - npm audit across runtime and build lockfile dependencies: 0 reported known
