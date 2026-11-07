@@ -5,6 +5,8 @@
   "app/vendor/LEDGER_LICENSES.txt": "f160bf79125118b775482ee208185d327fe94bb88346d9cd82079b0479ff738e",
   "app/vendor/LEDGER_TOKEN_LICENSE.txt": "c43174d759c87c3e8a423cb0cb6ee914feddc4eac5176350fd24674857a8ef5f",
   "app/vendor/PROVENANCE.txt": "791ec589ee9112f73b4718fc440c2ac6f8f88579c9fc8aac806e4b7a0269bf66",
+  "app/vendor/bitbox-usb.js": "c65659b31fb6779095d9314b6945ed9abdeb0c101d6ee27de1034e35495b9871",
+  "app/vendor/bitbox-usb.js.LEGAL.txt": "ee7910e27e2ed80483c96fd1136e902ae48e9839db36fd21623d28307bc5155e",
   "app/vendor/ethereum-blockies.js": "5283a72342bb29844e9ec7dc11a415a95fca4047af516728a8dd683bd8781873",
   "app/vendor/ethers.umd.min.js": "532950515fd29ae9f7a21ceb2b68100815024d7944c3d5a92246d5b900bd703b",
   "app/vendor/fonts/Noto-CJK-Copyright.txt": "849f4ea9c214fa4ac3593b770c699f387534b11ce671264c1b10d85bdcb5997b",
