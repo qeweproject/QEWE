@@ -21,7 +21,7 @@ test('RPC protocol errors and oversized streaming responses cannot be used for s
 });
 test('External history/price settings are visible defaults, script CSP remains local and user identity is absent from package metadata',()=>{
  const fs=require('fs'),{JSDOM}=require('jsdom'),p=require('../package.json'),d=new JSDOM(fs.readFileSync('app/index.html','utf8')).window.document;
- assert.equal(d.getElementById('history').checked,true);assert.equal(d.getElementById('usd').checked,true);assert.equal(d.getElementById('discover').checked,true);assert.equal(p.author,'QEWE contributors');assert.equal(p.license,'MIT');assert(d.querySelector('[http-equiv=Content-Security-Policy]').content.includes("connect-src 'none'"));assert.equal(d.getElementById('tips-address').textContent,'0x1B8147Eb5b45Cf7a9569EF23bd8ca42b63867B50');
+ assert.equal(d.getElementById('history').checked,false);assert.equal(d.getElementById('usd').checked,false);assert.equal(d.getElementById('discover').checked,false);assert.equal(p.author,'QEWE contributors');assert.equal(p.license,'MIT');assert(d.querySelector('[http-equiv=Content-Security-Policy]').content.includes("connect-src 'none'"));assert.equal(d.getElementById('tips-address').textContent,'0x1B8147Eb5b45Cf7a9569EF23bd8ca42b63867B50');
 });
 
 test('Offline mode cannot be unlocked while an offline signing plan is active',async()=>{
