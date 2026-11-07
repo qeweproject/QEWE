@@ -1,16 +1,14 @@
-# Installer builds for Windows, Linux and macOS with GitHub build-provenance
-# attestation. Runs on version tags, or manually (Actions > Release build > Run).
-# Source checks stay in checks.yml. Pin every remaining action
-# (attest-build-provenance, upload-artifact) to a full commit SHA, like checkout
-# and setup-node, before the first public release.
-name: Release build
+name: Reviewed installers
 on:
   push:
-    tags: ["v*"]
-    branches: [fonctionnalites-v3.2]  # TEMPORARY: build test, remove before merge
+    tags: ['v*']
+    branches: [qewe-security-multiplatform]
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: installers-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   build:
     strategy:
@@ -19,22 +17,26 @@ jobs:
         include:
           - os: windows-latest
             platform: win
-            script: build
-            file: '*.exe'
+            arch: x64
+            command: npm run build
+            extension: exe
           - os: ubuntu-24.04
             platform: linux
-            script: build:linux
-            file: '*.AppImage'
+            arch: x64
+            command: npm run build:linux
+            extension: deb
           - os: macos-latest
             platform: mac
-            script: build:mac
-            file: '*.dmg'
+            arch: arm64
+            command: npm exec -- electron-builder --mac dmg --arm64 --publish never
+            extension: dmg
+          - os: macos-latest
+            platform: mac
+            arch: x64
+            command: npm exec -- electron-builder --mac dmg --x64 --publish never
+            extension: dmg
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 45
-    permissions:
-      contents: read
-      id-token: write       # Sigstore signing of the attestation
-      attestations: write   # GitHub build provenance
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
@@ -43,26 +45,50 @@ jobs:
         with:
           node-version: '24'
       - run: npm ci --ignore-scripts
+      - run: npm audit --audit-level=low
       - run: npm audit signatures
+      - run: npm run build:vendor
       - run: npm run verify:vendor
+      - run: git diff --exit-code -- app/vendor
+      - run: npm run verify:privacy
       - run: npm test
-      - run: node node_modules/electron/install.js
-      - run: node node_modules/esbuild/install.js
-      - run: npm run ${{ matrix.script }}
-      - run: node scripts/verify-release.cjs ${{ matrix.platform }}
-      - name: Collect installer and print SHA256
+      - run: npm run test:dom
+      - run: ${{ matrix.command }}
+      - run: node scripts/verify-release.cjs ${{ matrix.platform }} ${{ matrix.arch }}
+      - name: Collect verified installer
         shell: bash
         run: |
           mkdir -p release-files
-          cp ../deliverables/${{ matrix.file }} release-files/
-          cd release-files && (sha256sum * 2>/dev/null || shasum -a 256 *)
-      # Attestations need a public repository (or GitHub Enterprise Cloud for private ones).
-      - if: ${{ !github.event.repository.private }}
-        uses: actions/attest-build-provenance@v2
+          cp ../deliverables/QEWE_*.${{ matrix.extension }} release-files/
+          cp ../deliverables/QEWE_*.${{ matrix.extension }}.sha256 release-files/
+          cp REVIEW_3.2_RC1.md release-files/
+          node scripts/source-manifest.cjs > release-files/SOURCE_SHA256.json
+      # Private test artifacts only. No release publication, signing secrets or public sharing.
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
-          subject-path: release-files/*
-      - uses: actions/upload-artifact@v4
-        with:
-          name: installer-${{ matrix.platform }}
-          path: release-files/*
+          name: qewe-${{ matrix.platform }}-${{ matrix.arch }}
+          path: release-files/
           if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+  attest:
+    if: ${{ !github.event.repository.private && startsWith(github.ref, 'refs/tags/v') }}
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: qewe-*
+          path: verified-installers
+      - uses: actions/attest-build-provenance@e4d4f7c39adfa4c260fb5c147f0622000aa14b99 # v4.0.0
+        with:
+          subject-path: |
+            verified-installers/**/*.exe
+            verified-installers/**/*.deb
+            verified-installers/**/*.dmg
