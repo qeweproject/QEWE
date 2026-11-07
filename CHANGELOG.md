@@ -13,6 +13,10 @@
 - Optional Blockscout discovery of all ERC20/ERC721/ERC1155 holdings, sanitized,
   display-only, excluded from the "positive balance" filter and USD estimate.
 - CSV export: other networks and discovered tokens columns.
+- USD estimate, indexed history and Blockscout discovery are now checked by
+  default (maintainer choice); selecting an extra network unchecks them,
+  unselecting every network checks them again. Blockscout and DefiLlama
+  therefore receive the checked public addresses by default.
 - Encrypted JSON keystore files (Web3 Secret Storage from MyEtherWallet, Geth,
   MetaMask, and Ethereum presale wallets) open with their password, in the
   seed-reading panel (one read-only address) and as an offline signer.

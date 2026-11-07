@@ -195,6 +195,13 @@ for(const net of EvmNetworks.NETWORKS){
   const rpc=document.createElement('input');rpc.type='url';rpc.id='net-rpc-'+net.id;rpc.placeholder=net.rpc;rpc.spellcheck=false;rpc.autocomplete='off';rpc.setAttribute('aria-label',net.name+' RPC');
   const row=document.createElement('label');row.className='network-rpc';row.dataset.noI18n='';row.append(document.createTextNode(net.name),rpc);$('network-rpcs').append(row);
 }
+// Value, history and full token/NFT discovery are on by default for Ethereum. Checking an extra
+// network switches them off (many more requests per address); unchecking every network restores them.
+// The user can still tick them again by hand.
+$('network-choices').addEventListener('change',()=>{
+  const any=!!document.querySelector('input[name=network]:checked');
+  for(const id of ['usd','history','discover'])$(id).checked=!any;
+});
 const presets=$('token-presets');
 for(const token of TokenPresets){
   const label=document.createElement('label');label.className='check token-choice';label.title=token.address;

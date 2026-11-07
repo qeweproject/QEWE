@@ -47,7 +47,8 @@ your seed, and tells you where your funds are.
 - 25 addresses per path initially, adjustable from 1 to 10,000; shared addresses
   retain their derivation associations. Tables show 250 rows per page.
 - ETH plus 25 default ERC20 tokens; custom Ethereum token contracts supported.
-- Optional indexed history and USD estimates; both are initially off. Selected
+- Indexed history, USD estimates and token/NFT discovery are on by default for an
+  Ethereum-only check and switch off when extra networks are selected. Selected
   RPC providers see public addresses when a balance check is requested. Enabled
   history and price providers see the public data needed by those requests.
 - 20 UI languages, English initially; some technical messages in additional
