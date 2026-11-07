@@ -1,3 +1,39 @@
+# 3.2.0-rc.3 — first public preview
+
+Combines the 3.2 feature branch, internal security review, Windows shortcut-icon fix, complete BitBox license texts, native payload verification and a free public release/provenance workflow. Experimental; no independent audit or physical-device validation by the build environment.
+
+# Unreleased — 3.2.0 features
+
+- Optional native balance and nonce check on Arbitrum One, Base, OP Mainnet,
+  Polygon PoS, BNB Smart Chain and Gnosis for every address (same address on
+  every EVM network). Default public RPCs are pre-approved; custom RPCs need the
+  native confirmation. Included in USD estimates when a quote is available.
+  Transactions stay Ethereum mainnet only.
+- Stop after N unused indexes per derivation path (gap limit, 0 = off). Indexes
+  are checked level by level so a stop decision always sees every lower index;
+  errors count as used; imported addresses are always checked.
+- Historical MyEtherWallet/MyCrypto paths (opt-in): Ethereum Classic, Ledger Live
+  ETC, Ledger ETC, testnet, RSK.
+- Optional Blockscout discovery of all ERC20/ERC721/ERC1155 holdings, sanitized,
+  display-only, excluded from the "positive balance" filter and USD estimate.
+- CSV export: other networks and discovered tokens columns.
+- Experimental Trezor (Model T, Safe 3, Safe 5) and BitBox02 public address
+  reads, as secondary buttons beside the Ledger one. Trezor uses a minimal
+  original Codec v1 implementation over WebUSB (no Trezor library, no remote
+  iframe); BitBox02 uses the official `@bitboxswiss/bitbox-api` 0.4.0 (pure
+  TypeScript, Noise pairing code shown in a dialog). Device permissions are
+  limited to the chosen family during the read. Signing stays Ledger/offline.
+- USD estimate, indexed history and Blockscout discovery are now checked by
+  default (maintainer choice); selecting an extra network unchecks them,
+  unselecting every network checks them again. Blockscout and DefiLlama
+  therefore receive the checked public addresses by default.
+- Encrypted JSON keystore files (Web3 Secret Storage from MyEtherWallet, Geth,
+  MetaMask, and Ethereum presale wallets) open with their password, in the
+  seed-reading panel (one read-only address) and as an offline signer.
+- Linux AppImage and macOS dmg build targets; release workflow builds and
+  attests all three platforms; `verify-release` accepts `win|linux|mac`.
+- README features/screenshots, `docs/VERIFY.md`, `docs/RELEASING.md`.
+
 # Unreleased — security review follow-up
 
 - RPC URLs now require a one-time native confirmation per session (main

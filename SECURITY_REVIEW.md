@@ -1,3 +1,5 @@
+> Historical internal review notes for an earlier candidate. Not an independent audit or security certification. Current distribution status: RELEASE_NOTES.md and docs/VERIFY.md.
+
 # QEWE 3.1.0 — review record
 
 This is a limited engineering review and security-hardening candidate. It is not

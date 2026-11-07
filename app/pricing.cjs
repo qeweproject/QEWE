@@ -1,8 +1,8 @@
 const {readText}=require('./network.cjs');
 const {formatUnits}=require('ethers');
 const SCALE=100000000n;
-async function fetchPrices(tokens,signal,fetcher=fetch,now=Date.now()){
-  const ids=['coingecko:ethereum',...tokens.map(a=>'ethereum:'+a.toLowerCase())];
+async function fetchPrices(tokens,signal,fetcher=fetch,now=Date.now(),extraIds=[]){
+  const ids=[...new Set(['coingecko:ethereum',...extraIds.filter(id=>/^coingecko:[a-z0-9-]{1,60}$/.test(id)),...tokens.map(a=>'ethereum:'+a.toLowerCase())])];
   const response=await fetcher('https://coins.llama.fi/prices/current/'+ids.join(','),{method:'GET',redirect:'error',signal:AbortSignal.any([signal,AbortSignal.timeout(15000)])});
   if(!response.ok)throw Error('Cours indisponibles.');
   const raw=await readText(response,262144);
@@ -26,6 +26,7 @@ function estimateUsd(result,snapshot){
   };
   add(result.wei,18,'coingecko:ethereum','ETH');
   for(const token of result.tokens)add(token.raw,token.decimals??18,'ethereum:'+token.address.toLowerCase(),token.symbol);
+  for(const n of result.networks||[])add(n.status==='ok'?n.wei:null,18,n.price,n.name+' '+n.symbol);
   return {micros:known?sum.toString():null,value:known?formatUnits(sum,8):null,partial:missing.length>0,missing,source:snapshot.source,fetchedAt:snapshot.fetchedAt};
 }
 module.exports={fetchPrices,estimateUsd,SCALE};

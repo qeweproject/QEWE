@@ -34,7 +34,7 @@ async function run(){
   }};
   w.HTMLCanvasElement.prototype.getContext=function(){return {fillRect(){},fillStyle:''};};w.HTMLCanvasElement.prototype.toDataURL=function(){return 'data:image/png;base64,AA==';};
   w.eval(fs.readFileSync(path.join(appDir,'vendor/ethers.umd.min.js'),'utf8'));
-  w.eval(fs.readFileSync(path.join(appDir,'address-book.js'),'utf8'));w.eval(fs.readFileSync(path.join(appDir,'token-presets.js'),'utf8'));w.eval(fs.readFileSync(path.join(appDir,'vendor/ethereum-blockies.js'),'utf8'));w.eval(fs.readFileSync(path.join(appDir,'blockies.js'),'utf8'));w.eval(fs.readFileSync(path.join(appDir,'renderer.js'),'utf8'));global.lastStatus=()=>$('status').textContent;assert.equal($('balance-settings').open,false);assert.equal($('stop').hidden,true);
+  w.eval(fs.readFileSync(path.join(appDir,'address-book.js'),'utf8'));w.eval(fs.readFileSync(path.join(appDir,'token-presets.js'),'utf8'));w.eval(fs.readFileSync(path.join(appDir,'vendor/ethereum-blockies.js'),'utf8'));w.eval(fs.readFileSync(path.join(appDir,'blockies.js'),'utf8'));w.eval(fs.readFileSync(path.join(appDir,'networks.js'),'utf8'));w.eval(fs.readFileSync(path.join(appDir,'renderer.js'),'utf8'));global.lastStatus=()=>$('status').textContent;assert.equal($('balance-settings').open,false);assert.equal($('stop').hidden,true);
   $('address-count').value='100';$('phrase').value='test test test test test test test test test test test junk';$('derive').click();
   await until(()=>$('count').textContent==='299');
   assert.equal(doc.querySelectorAll('#rows tr').length,250);assert.equal($('phrase').value,'');assert.equal($('password').value,'');assert.equal(doc.querySelectorAll('.blockie').length,0);
@@ -85,7 +85,7 @@ async function run(){
   w.desktop.ledgerAvailable=true;w.desktop.beginLedger=async()=>true;w.desktop.endLedger=async()=>{ended++;return true;};w.LedgerUsb={connect:async()=>({readAddress:async(path,display)=>{ledgerCalls.push({path,display});return hd.derivePath(path).address;},close:async()=>closed++})};
   $('address-count').value='3';for(const input of doc.querySelectorAll('input[name=mode]'))input.checked=true;
   $('phrase').value='this must be cleared';$('password').value='not a Ledger PIN';$('ledger-read').click();await until(()=>$('generation-status').textContent.includes('adresses uniques lues sur le Ledger'));await until(()=>$('ledger-read').disabled===false);
-  assert.equal($('count').textContent,'8');assert.equal($('phrase').value,'');assert.equal($('password').value,'');assert.equal(closed,1);assert.equal(ended,1);assert.equal(ledgerCalls.length,8);assert(ledgerCalls.every(c=>!c.display));assert($('derivation-info').textContent.includes('restent sur l’appareil'));
+  assert.equal($('count').textContent,'22');assert.equal($('phrase').value,'');assert.equal($('password').value,'');assert.equal(closed,1);assert.equal(ended,1);assert.equal(ledgerCalls.length,22);assert(ledgerCalls.every(c=>!c.display));assert($('derivation-info').textContent.includes('restent sur l’appareil'));
   w.LedgerUsb.connect=async()=>({readAddress:async(path,display)=>{throw {statusCode:0x6985};},close:async()=>closed++});
   $('ledger-read').click();await until(()=>$('generation-status').textContent.includes('refusée'));await until(()=>$('ledger-read').disabled===false);assert.equal($('count').textContent,'0');assert.equal(closed,2);
   dom.window.close();

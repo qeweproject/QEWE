@@ -5,6 +5,8 @@
   "app/vendor/LEDGER_LICENSES.txt": "f160bf79125118b775482ee208185d327fe94bb88346d9cd82079b0479ff738e",
   "app/vendor/LEDGER_TOKEN_LICENSE.txt": "c43174d759c87c3e8a423cb0cb6ee914feddc4eac5176350fd24674857a8ef5f",
   "app/vendor/PROVENANCE.txt": "791ec589ee9112f73b4718fc440c2ac6f8f88579c9fc8aac806e4b7a0269bf66",
+  "app/vendor/bitbox-usb.js": "58b378d1a642436fccf1be2cf568c1f0f93d51f09fffa4c2c63ba36c706e8f0e",
+  "app/vendor/bitbox-usb.js.LEGAL.txt": "ee7910e27e2ed80483c96fd1136e902ae48e9839db36fd21623d28307bc5155e",
   "app/vendor/ethereum-blockies.js": "5283a72342bb29844e9ec7dc11a415a95fca4047af516728a8dd683bd8781873",
   "app/vendor/ethers.umd.min.js": "532950515fd29ae9f7a21ceb2b68100815024d7944c3d5a92246d5b900bd703b",
   "app/vendor/fonts/Noto-CJK-Copyright.txt": "849f4ea9c214fa4ac3593b770c699f387534b11ce671264c1b10d85bdcb5997b",
@@ -22,5 +24,6 @@
   "app/vendor/ledger-tokens.json": "850161f9b9309ce4b9286e3bd16b544a974eddad5d93bfbe258bce34106cc29c",
   "app/vendor/ledger-usb.js": "79c936d27df49a2c96d13d9961c0da04ca446cc3c60294453a8195bc81cbd3a0",
   "app/vendor/ledger-usb.js.LEGAL.txt": "ad8e6e57b08878a28d272eedb11d988da88f4f0244c019cb8f5003d10ba0566f",
-  "app/vendor/wordlists-extra.js": "b66b907699e194e8c65b7bcda5c0eb720545f60511841f3ed8056c43cbb5dd76"
+  "app/vendor/wordlists-extra.js": "b66b907699e194e8c65b7bcda5c0eb720545f60511841f3ed8056c43cbb5dd76",
+  "app/vendor/BITBOX_LICENSES.txt": "5d2370f18a43d3dfb6cd65d90b3c6f46545468c18ef73afdc1cc4eed36e63f92"
 }

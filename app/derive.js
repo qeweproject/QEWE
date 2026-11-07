@@ -7,6 +7,19 @@
   const LANGUAGES={en:'Anglais',fr:'Français',es:'Espagnol',it:'Italien',pt:'Portugais',ja:'Japonais',ko:'Coréen',zh_cn:'Chinois simplifié',zh_tw:'Chinois traditionnel',cz:'Tchèque'};
   class InputError extends Error {constructor(code,message){super(message);this.code=code;}}
   const fail=(code,message)=>{throw new InputError(code,message);};
+  // A tiny JSON file can otherwise request gigabytes of RAM or billions of KDF rounds.
+  function boundedKeystore(json){
+    let data;try{data=JSON.parse(json);}catch{fail('KEYSTORE_FORMAT','Fichier keystore JSON invalide.');}
+    const field=(o,k)=>{if(!o||typeof o!=='object'||Array.isArray(o))return;const keys=Object.keys(o).filter(x=>x.toLowerCase()===k);if(keys.length!==1)return;return o[keys[0]];};
+    const crypto=field(data,'crypto'),params=field(crypto,'kdfparams'),kdf=String(field(crypto,'kdf')||'').toLowerCase();
+    const number=k=>{let value=field(params,k);if(typeof value==='string'&&/^\d{1,15}$/.test(value))value=Number(value);return Number.isSafeInteger(value)&&value>0?BigInt(value):0n;};
+    let ok=false;
+    if(number('dklen')===32n){
+      if(kdf==='scrypt'){const n=number('n'),r=number('r'),p=number('p');ok=n>=2n&&(n&(n-1n))===0n&&r>0n&&r<=32n&&p>0n&&p<=16n&&128n*n*r<=268435456n&&n*r*p<=4194304n;}
+      if(kdf==='pbkdf2')ok=number('c')>0n&&number('c')<=2000000n;
+    }
+    if(!ok)fail('KEYSTORE_COST','Paramètres de déchiffrement refusés : limites de mémoire ou de calcul dépassées, ou paramètres invalides. Le fichier n’a pas été déchiffré.');
+  }
   const fold=word=>word.normalize('NFKD').toLowerCase().replace(/\p{M}/gu,'');
   const dictionaries=new Map();
   function dictionary(lang){
@@ -35,9 +48,26 @@
   function masterFromInput(phrase,password,language,options,report){
     if(typeof phrase!=='string'||!phrase.trim()||phrase.length>8192||typeof password!=='string'||password.length>2048)fail('INPUT','Saisie vide ou trop longue.');
     const format=options.format??'bip39',iterations=options.iterations??2048;
-    if(!['bip39','compat','seed','xprv','private'].includes(format))fail('FORMAT','Format de récupération inconnu.');
+    if(!['bip39','compat','seed','xprv','private','keystore'].includes(format))fail('FORMAT','Format de récupération inconnu.');
     if(!Number.isInteger(iterations)||iterations<1||iterations>1000000)fail('ROUNDS','PBKDF2 : choisir un entier entre 1 et 1 000 000.');
     const info={format,iterations,language:'',warnings:[]};let seed;
+    if(format==='keystore'){
+      // Encrypted JSON keystore (Web3 Secret Storage: MEW, Geth, MetaMask export) or Ethereum presale wallet.
+      if(options.extraWord||options.expandWords||iterations!==2048)fail('KEY_OPTIONS','Un fichier keystore se lit sans préfixes, mot supplémentaire ni réglage PBKDF2.');
+      if(!password)fail('KEYSTORE_PASSWORD','Saisissez le mot de passe du fichier keystore.');
+      const json=phrase.trim();let keystore=false,presale=false;
+      try{keystore=E.isKeystoreJson(json);presale=!keystore&&E.isCrowdsaleJson(json);}catch{}
+      if(!keystore&&!presale)fail('KEYSTORE_FORMAT','Fichier keystore non reconnu. Utilisez un fichier JSON chiffré (UTC--…) de MyEtherWallet, Geth ou MetaMask.');
+      if(keystore)boundedKeystore(json);
+      let key;
+      try{
+        const account=keystore?E.decryptKeystoreJsonSync(json,password):E.decryptCrowdsaleJson(json,password);
+        key=new E.Wallet(account.privateKey);
+        if(account.address&&E.getAddress(account.address)!==key.address)throw Error();
+      }catch{fail('KEYSTORE_PASSWORD','Mot de passe incorrect ou fichier keystore endommagé.');}
+      info.warnings.push('Fichier keystore JSON : une seule adresse, sans dérivation.');
+      report(info);return key;
+    }
     if(format==='xprv'||format==='private'){
       if(password||options.extraWord||options.expandWords||iterations!==2048)fail('KEY_OPTIONS','Une clé privée se lit sans passphrase, préfixes, mot supplémentaire ni réglage PBKDF2.');
       let key;try{
@@ -85,7 +115,7 @@
   }
   function derive(phrase, password, language, modes, progress=()=>{},custom='',limit=25,options={},report=()=>{}) {
     if(!Number.isInteger(limit)||limit<1||limit>10000)fail('LIMIT','Nombre d’adresses : entier entre 1 et 10000.');
-    if(options.format==='private'){const key=masterFromInput(phrase,password,language,options,report);return B.normalizeRows([{address:key.address,mode:'Clé privée · lecture seule',index:0,path:''}]);}
+    if(options.format==='private'||options.format==='keystore'){const key=masterFromInput(phrase,password,language,options,report);return B.normalizeRows([{address:key.address,mode:options.format==='keystore'?'Fichier keystore JSON · lecture seule':'Clé privée · lecture seule',index:0,path:''}]);}
     if (!Array.isArray(modes) || (!modes.length&&!custom) || modes.some(x=>!MODES[x])) fail('MODES','Sélectionnez au moins un chemin de dérivation valide.');
     if(custom)try{P.validateTemplate(custom);}catch(error){fail('PATH',error.message);}
     // Only this short-lived worker owns the seed and private HD nodes.
@@ -108,10 +138,10 @@
     return B.normalizeRows(rows);
   }
   function signOffline(phrase,password,language,options,plan){
-    if(!options||!['bip39','xprv','private'].includes(options.format)||(options.iterations??2048)!==2048||options.extraWord||options.expandWords)fail('SIGN_FORMAT','Signature locale : BIP39 standard, xprv racine ou clé privée uniquement.');
+    if(!options||!['bip39','xprv','private','keystore'].includes(options.format)||(options.iterations??2048)!==2048||options.extraWord||options.expandWords)fail('SIGN_FORMAT','Signature locale : BIP39 standard, xprv racine, clé privée ou fichier keystore uniquement.');
     const C=typeof module!=='undefined'?require('./transfer-codec.js'):root.TransferCodec;const decoded=C.validatePlan(plan);
     let key=masterFromInput(phrase,password,language,options,()=>{});phrase='';password='';
-    if(options.format!=='private')key=key.derivePath(plan.path);
+    if(!['private','keystore'].includes(options.format))key=key.derivePath(plan.path);
     if(key.address!==decoded.from){key=null;fail('WRONG_SIGNER','La seed phrase ou la clé ne correspond pas à l’adresse et au chemin choisis.');}
     const signed=C.signed(plan,key.signingKey.sign(E.keccak256(plan.unsigned)));key=null;return signed;
   }

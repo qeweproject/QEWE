@@ -1,9 +1,7 @@
-* text=auto
-*.js text eol=lf
-*.cjs text eol=lf
-*.json text eol=lf
-*.md text eol=lf
-*.yml text eol=lf
-*.nsi text eol=lf
+# Byte-identical checkouts on every OS: vendored files are pinned by SHA256 and the
+# packaged app is compared byte for byte with the source (verify-release).
+* text=auto eol=lf
+app/vendor/** -text
 *.ttf binary
 *.otf binary
+*.png binary
