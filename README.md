@@ -2,7 +2,11 @@
 
 **Ethereum Wallet Analysis & Offline Signing Tool**
 
-Desktop utility (Windows 11 x64; Linux and macOS builds in preparation) that finds
+[![Demo: reading Ledger addresses and checking balances across paths and networks (demo data)](docs/screenshots/demo.gif)](docs/screenshots/demo.gif)
+
+*20-second demo with fake test data — no real wallet is shown.*
+
+Desktop utility (Windows 11 x64, Linux AppImage and macOS dmg) that finds
 forgotten Ethereum funds. Ledger USB comes first: read public addresses across
 Ledger Live, Legacy, BIP44, historical MEW and custom paths, inspect ETH/ERC20
 balances on Ethereum and native balances on major EVM networks, and prepare
@@ -12,7 +16,7 @@ to the explicit offline transaction flow.
 
 ## Status
 
-Version 3.1.0 is a security-hardening candidate, not an independently audited
+Version 3.2 is a security-hardening candidate, not an independently audited
 wallet. Automated tests use published test wallets, mock Ethereum nodes and a
 simulated Ledger. No physical Ledger or Windows 11 execution test has been
 performed by the build environment. Do not describe this as certified or safe
@@ -29,6 +33,26 @@ your seed, and tells you where your funds are.
 
 ![Main window](docs/screenshots/overview.png)
 ![Results with balances on several networks (demo data)](docs/screenshots/results.png)
+
+## Why you can trust it (and how to check)
+
+A tool that can see recovery phrases has to be checkable, not just promised.
+
+- **Open source, MIT.** Everything in `app/` is readable; vendored libraries are
+  pinned by checksum (`VENDOR_SHA256.json`) and rebuilt in CI.
+- **The part that handles secrets has no network.** The window that reads your
+  phrase or key runs sandboxed with a Content-Security-Policy of
+  `connect-src 'none'`. Only the main process talks to the network, and only to
+  an allow-list of endpoints, never with secrets.
+- **Ledger first.** With a hardware wallet, your seed is never typed into or
+  read by the computer. Only public addresses leave the device.
+- **Reproducible provenance.** Every release has SHA256 sums and a GitHub build
+  attestation proving which commit built the file.
+- **Check it yourself** in a few minutes: [docs/VERIFY.md](docs/VERIFY.md)
+  (compare hashes, verify the attestation, build from source, watch the network).
+
+QEWE is not independently audited yet. Start with public addresses and small
+test wallets, and read [SECURITY.md](SECURITY.md).
 
 ## Main features
 

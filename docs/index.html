@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QEWE — Quick Ethereum Wallet Explorer</title>
+<meta name="description" content="Find forgotten Ethereum funds across wallet derivation paths and networks, from your Ledger. Open source, MIT.">
+<style>
+:root{color-scheme:dark;--bg:#0a0f18;--card:#111a28;--fg:#e8eef7;--mut:#9fb0c6;--ok:#3ddc97;--line:#22314a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,sans-serif}
+main{max-width:860px;margin:0 auto;padding:40px 20px 80px}
+h1{font-size:2.2rem;margin:.2em 0}h2{margin-top:2.2em;border-bottom:1px solid var(--line);padding-bottom:.3em}
+a{color:var(--ok)}.lead{color:var(--mut);font-size:1.15rem}
+.btn{display:inline-block;background:var(--ok);color:#04130c;font-weight:700;padding:12px 22px;border-radius:10px;text-decoration:none;margin:8px 8px 8px 0}
+.btn.alt{background:transparent;color:var(--fg);border:1px solid var(--line)}
+img{max-width:100%;border-radius:12px;border:1px solid var(--line)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:12px 0}
+details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 16px;margin:10px 0}summary{cursor:pointer;font-weight:600}
+code{background:#0d1522;padding:2px 6px;border-radius:5px}
+</style></head><body><main>
+<h1>QEWE <small style="font-weight:400;color:var(--mut)">Quick Ethereum Wallet Explorer</small></h1>
+<p class="lead">Find forgotten Ethereum funds. Read public addresses from your Ledger, check every derivation path and several networks at once, and see where your money is — without ever typing your seed phrase.</p>
+<p><a class="btn" href="https://github.com/qeweproject/QEWE/releases/latest">Download (Windows · Linux · macOS)</a><a class="btn alt" href="https://github.com/qeweproject/QEWE">Source code</a><a class="btn alt" href="https://github.com/qeweproject/QEWE/blob/main/docs/VERIFY.md">Verify your download</a></p>
+<img src="screenshots/demo.gif" alt="20-second demo with fake test data" width="860">
+<p style="color:var(--mut);font-size:.9rem">Demo with fake test data.</p>
+
+<h2>Why it exists</h2>
+<p>The same recovery phrase gives completely different addresses depending on the path a wallet used (Ledger Live, Ledger Legacy, MetaMask/Trezor, old MyEtherWallet…). The same address may also hold funds on Arbitrum, Base or Optimism that Ethereum explorers do not show. QEWE checks all of it in one go. It was built to recover its author's own funds.</p>
+
+<h2>Features</h2>
+<ul>
+<li>Ledger via USB first; Trezor and BitBox02 (beta, read-only).</li>
+<li>Ledger Live, Legacy, BIP44 and historical MEW/MyCrypto paths, with the wallets that use each path listed.</li>
+<li>ETH and ERC20 balances, optional USD estimate, optional token and NFT discovery.</li>
+<li>Optional balances on Arbitrum, Base, OP Mainnet, Polygon, BNB Chain, Gnosis.</li>
+<li>Gap limit: stop after N empty addresses.</li>
+<li>Offline signing of simple ETH/ERC20 transfers; keystore JSON support.</li>
+<li>20 languages. Free, MIT licence.</li>
+</ul>
+
+<h2>Can I trust it?</h2>
+<div class="card">Don't take our word for it — check. The window that handles secrets has no network access (<code>connect-src 'none'</code>), releases ship with SHA256 sums and a GitHub build attestation, and you can build it yourself. QEWE is <strong>not independently audited yet</strong>: start with public addresses and small test wallets. Never type a Ledger recovery phrase into any computer application.</div>
+<p><a href="https://github.com/qeweproject/QEWE/blob/main/docs/VERIFY.md">How to verify it →</a></p>
+
+<h2>FAQ</h2>
+<details><summary>Does QEWE need my seed phrase?</summary><p>No. With a Ledger, only public addresses are read. A software seed/key entry exists as a secondary tool; avoid it for important funds.</p></details>
+<details><summary>Does it send my addresses somewhere?</summary><p>Balance checks send public addresses to the RPC provider you select (public defaults or your own); optional history, price and discovery providers see the data needed for those requests. Nothing is sent without you pressing scan.</p></details>
+<details><summary>Windows says the app is unrecognised.</summary><p>Installers are not code-signed yet, so SmartScreen warns. Compare the SHA256 and the build attestation instead (see the verify page).</p></details>
+<details><summary>Linux AppImage won't start.</summary><p>Electron's sandbox needs unprivileged user namespaces; some distributions restrict them. Don't use <code>--no-sandbox</code>; allow it via your distribution's profile or build from source.</p></details>
+<details><summary>Which networks can I send on?</summary><p>Transfers are Ethereum mainnet only (ETH and ERC20 <code>transfer</code>). Other networks are read-only.</p></details>
+<details><summary>Is it audited?</summary><p>Not yet by an independent firm. See SECURITY.md in the repository for the internal review and known limits.</p></details>
+<details><summary>How do I report a vulnerability?</summary><p>Use GitHub private vulnerability reporting on the repository. Never post real phrases or keys.</p></details>
+<p style="color:var(--mut);margin-top:3em">QEWE is an independent open-source project, provided as is, without warranty.</p>
+</main></body></html>
