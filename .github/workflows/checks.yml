@@ -1,0 +1,27 @@
+name: Source checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts
+      - run: npm audit --audit-level=low
+      - run: npm audit signatures
+      - run: npm run build:vendor
+      - run: npm run verify:vendor
+      - run: git diff --exit-code -- app/vendor
+      - run: npm run verify:privacy
+      - run: npm test
+      - run: npm run test:dom
