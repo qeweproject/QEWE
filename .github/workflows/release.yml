@@ -68,7 +68,7 @@ jobs:
           cp ../deliverables/QEWE_*.${{ matrix.extension }} release-files/
           cp ../deliverables/QEWE_*.${{ matrix.extension }}.sha256 release-files/
           node scripts/source-manifest.cjs > release-files/SOURCE_SHA256.json
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: qewe-${{ matrix.platform }}-${{ matrix.arch }}
           path: release-files/
