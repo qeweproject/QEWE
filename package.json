@@ -31,8 +31,8 @@
     "electron": "45.2.3",
     "electron-builder": "26.18.0",
     "esbuild": "0.28.2",
-    "jsdom": "26.1.0",
-    "playwright": "1.58.2"
+    "jsdom": "30.1.3",
+    "playwright": "1.65.0"
   },
   "build": {
     "appId": "local.ethereum.adresses",
