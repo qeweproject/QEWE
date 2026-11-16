@@ -11,7 +11,7 @@ jobs:
     timeout-minutes: 55
     steps:
       - name: Install geometry tools
-        run: python -m pip install --disable-pip-version-check pynacl numpy scipy trimesh manifold3d shapely pillow lxml rtree matplotlib numba
+        run: python -m pip install --disable-pip-version-check pynacl numpy scipy trimesh manifold3d shapely pillow lxml rtree matplotlib numba networkx
       - name: Create ephemeral encryption key
         id: key
         shell: python
@@ -90,8 +90,15 @@ jobs:
               solid=md.Manifold(md.Mesh(vert_properties=np.asarray(united.vertices,dtype=np.float32),tri_verts=np.asarray(united.faces,dtype=np.uint32)))
               refined=solid.refine_to_length(0.16)
               assert refined.num_tri()<6000000, "Detail mesh exceeded size limit"
-              raw=refined.to_mesh()
-              mesh=trimesh.Trimesh(vertices=np.array(raw.vert_properties[:,:3],dtype=np.float64),faces=np.array(raw.tri_verts,dtype=np.int64),process=True)
+              raw=refined.to_mesh64()
+              parent=np.arange(len(raw.vert_properties),dtype=np.int64)
+              parent[np.asarray(raw.merge_from_vert,dtype=np.int64)]=np.asarray(raw.merge_to_vert,dtype=np.int64)
+              for _ in range(30):
+                  compressed=parent[parent]
+                  if np.array_equal(compressed,parent):break
+                  parent=compressed
+              mesh=trimesh.Trimesh(vertices=np.array(raw.vert_properties[:,:3],dtype=np.float64),faces=parent[np.array(raw.tri_verts,dtype=np.int64)],process=False)
+              mesh.remove_unreferenced_vertices()
               assert mesh.is_watertight
               vertices=mesh.vertices.copy()
               normals=mesh.vertex_normals.copy()
@@ -125,13 +132,26 @@ jobs:
               assert mesh.is_watertight and mesh.is_winding_consistent and mesh.volume>0
               # 180 degrees around X: stem end becomes the bottom contact plane.
               top=float(original.bounds[1,2])
-              mesh.vertices=np.column_stack((mesh.vertices[:,0],original.bounds[1,1]-mesh.vertices[:,1],top-mesh.vertices[:,2]))
+              candidates=[]
+              for area,normal,facet in zip(stem.facets_area,stem.facets_normal,stem.facets):
+                  centre=stem.triangles_center[facet].mean(axis=0)
+                  if normal[2]>0.65 and centre[2]>12:
+                      plane=float(np.dot(centre,normal))
+                      if np.max(original.vertices@normal)-plane<0.005:candidates.append((float(area),normal.copy()))
+              if candidates:
+                  contact_area,tipnormal=max(candidates,key=lambda x:x[0])
+                  rotation=trimesh.geometry.align_vectors(tipnormal,[0,0,-1])
+                  mesh.apply_transform(rotation)
+                  mesh.apply_translation([0,0,-mesh.bounds[0,2]])
+              else:
+                  contact_area=0.0
+                  mesh.vertices=np.column_stack((mesh.vertices[:,0],original.bounds[1,1]-mesh.vertices[:,1],top-mesh.vertices[:,2]))
               assert abs(mesh.bounds[0,2])<0.0001
               offset=np.array([30-mesh.bounds[0,0],30-mesh.bounds[0,1],0])
               mesh.apply_translation(offset)
               file3mf=root/"Poignee_V3_FlashStudio_tige_plateau.3mf"
               file3mf.write_bytes(trimesh.exchange.threemf.export_3MF(mesh))
-              check=trimesh.load(file3mf,force="mesh")
+              check=trimesh.load(file3mf,force="mesh",process=False)
               assert check.is_watertight and check.is_winding_consistent
               assert np.allclose(mesh.bounds,check.bounds,atol=0.0002)
               assert abs(check.volume-mesh.volume)/mesh.volume<0.00001
@@ -175,7 +195,7 @@ jobs:
               draw.text((675,55),"Vue du dessous : tige et raccord",fill=(35,55,65),font=small)
               draw.text((25,430),"V3 A : plots 0,45 mm + fond rugueux 0,20 mm. Tige sur le plateau.",fill=(35,55,65),font=small)
               previewpath=root/"Apercu_Poignee_V3.png";preview.save(previewpath)
-              summary={"watertight":bool(mesh.is_watertight),"winding_consistent":bool(mesh.is_winding_consistent),"faces":len(mesh.faces),"vertices":len(mesh.vertices),"dimensions_mm":mesh.extents.tolist(),"volume_mm3":float(mesh.volume),"bottom_z_mm":float(mesh.bounds[0,2]),"stem_displacement_mm":0.0,"max_relief_mm":float((h*active).max()),"roundtrip_3mf":True}
+              summary={"watertight":bool(mesh.is_watertight),"winding_consistent":bool(mesh.is_winding_consistent),"faces":len(mesh.faces),"vertices":len(mesh.vertices),"dimensions_mm":mesh.extents.tolist(),"volume_mm3":float(mesh.volume),"bottom_z_mm":float(mesh.bounds[0,2]),"stem_displacement_mm":0.0,"stem_contact_flat_area_mm2":contact_area,"max_relief_mm":float((h*active).max()),"roundtrip_3mf":True}
               (root/"geometry_summary.json").write_text(json.dumps(summary))
               from library_upload import UploadRequest
               requests=[{"local_path":str(file3mf),"purpose":"create_library_file","library_artifact_type":"other"},{"local_path":str(previewpath),"purpose":"create_library_file","library_artifact_type":"image"}]
