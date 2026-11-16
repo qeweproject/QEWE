@@ -1,0 +1,108 @@
+name: Private handle V3 inspection
+on:
+  push:
+    branches: ['work/poignee-v3']
+    paths: ['.github/workflows/poignee-v3.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Install geometry tools
+        run: python -m pip install --disable-pip-version-check pynacl numpy scipy trimesh manifold3d shapely pillow lxml rtree matplotlib
+      - name: Create ephemeral encryption key
+        id: key
+        shell: python
+        run: |
+          from nacl.public import PrivateKey
+          from pathlib import Path
+          import os
+          sk=PrivateKey.generate()
+          p=Path("/tmp/model-secret")
+          p.write_bytes(bytes(sk))
+          p.chmod(0o600)
+          Path("/tmp/model-public.txt").write_text(bytes(sk.public_key).hex())
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f: f.write("pub="+bytes(sk.public_key).hex()+"\n")
+      - name: Publish public encryption key
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-key-${{ steps.key.outputs.pub }}
+          path: /tmp/model-public.txt
+          retention-days: 1
+      - name: Inspect encrypted archives
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: python
+        run: |
+          import os,sys,time,json,base64,traceback,subprocess,io,zipfile,urllib.request,urllib.error,hashlib
+          from pathlib import Path
+          from nacl.public import PrivateKey,PublicKey,Box
+          secret=PrivateKey(Path("/tmp/model-secret").read_bytes())
+          repo=os.environ["GITHUB_REPOSITORY"]
+          branch=os.environ["GITHUB_REF_NAME"]
+          runid=os.environ["GITHUB_RUN_ID"]
+          packet=None
+          for attempt in range(240):
+              try:
+                  req=urllib.request.Request("https://api.github.com/repos/"+repo+"/contents/.work-3d/input.json?ref="+branch,headers={"Authorization":"Bearer "+os.environ["GITHUB_TOKEN"],"Accept":"application/vnd.github+json","Cache-Control":"no-cache"})
+                  with urllib.request.urlopen(req,timeout=20) as response: data=json.load(response)
+                  candidate=json.loads(base64.b64decode(data["content"]))
+                  if str(candidate.get("run_id"))==runid: packet=candidate;break
+              except (urllib.error.HTTPError,urllib.error.URLError,ValueError): pass
+              time.sleep(5)
+          if packet is None: raise SystemExit("No matching encrypted model input received")
+          box=Box(secret,PublicKey(base64.b64decode(packet["public_key"])))
+          try:
+              config=json.loads(box.decrypt(base64.b64decode(packet["ciphertext"]),base64.b64decode(packet["nonce"])))
+              root=Path("/tmp/poignee-v3-job");root.mkdir(mode=0o700,exist_ok=True)
+              hashes=["fa2092d1cbe735f448bb9b1611ccc5712b7e78d4fbd3d72c563cec6b704b2ea85e11c71adb50b96eb45990d1c42a3f3ab2cc1194049ded9f2db15d458ed4b707","e486c3d220c2680bf0ddd1ea2bf9e0224b0d958ed5d3a111423ba24779c356c3569f59584559c8bb2aabbe83f0474e93e90d646d279de150e5fb0318c59a93e6"]
+              for name,expected in zip(["library_file_transfer.py","library_hosted_apps.py"],hashes):
+                  code=config["helpers"][name]
+                  if hashlib.sha512(code.encode()).hexdigest()!=expected: raise ValueError("Library helper integrity check failed")
+                  (root/name).write_text(code)
+              archives=[]
+              for i,transfer in enumerate(config["sources"]):
+                  if transfer["file_name"] not in ["poignée.zip","Texture_Grip_RTF6_Fuzzy_04_V3.zip"]: raise ValueError("Unexpected source file")
+                  if transfer["size_bytes"]>50000000: raise ValueError("Source exceeds expected limit")
+                  dest=root/("source_"+str(i)+".zip")
+                  p=subprocess.run([sys.executable,str(root/"library_file_transfer.py"),"materialize",str(dest)],input=json.dumps(transfer),text=True,capture_output=True,timeout=120)
+                  if p.returncode: raise RuntimeError("Materialization failed: "+p.stderr[-1500:]+p.stdout[-1500:])
+                  archives.append(dest)
+              result={"archives":[],"models":[],"previews":[]}
+              import numpy as np,trimesh
+              import matplotlib
+              matplotlib.use("Agg")
+              import matplotlib.pyplot as plt
+              from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+              for i,archive in enumerate(archives):
+                  records=[]
+                  with zipfile.ZipFile(archive) as z:
+                      if sum(x.file_size for x in z.infolist())>500000000: raise ValueError("Archive expansion exceeds limit")
+                      for entry in z.infolist():
+                          rec={"name":entry.filename,"size":entry.file_size};records.append(rec)
+                          suffix=Path(entry.filename).suffix.lower()
+                          if suffix in [".txt",".md",".svg",".scad"] and entry.file_size<20000000: rec["text_start"]=z.read(entry).decode("utf-8",errors="replace")[:5000]
+                          if suffix==".png":
+                              from PIL import Image
+                              im=Image.open(io.BytesIO(z.read(entry)));rec["image"]={"size":im.size,"mode":im.mode};im.thumbnail((650,650))
+                              out=io.BytesIO();im.save(out,format="PNG")
+                              if len(result["previews"])<5: result["previews"].append({"name":entry.filename,"png":base64.b64encode(out.getvalue()).decode()})
+                          if i==0 and suffix in [".stl",".3mf",".obj"]:
+                              m=trimesh.load(io.BytesIO(z.read(entry)),file_type=suffix[1:],force="mesh")
+                              if not isinstance(m,trimesh.Trimesh): continue
+                              result["models"].append({"name":entry.filename,"vertices":len(m.vertices),"faces":len(m.faces),"bounds":m.bounds.tolist(),"watertight":bool(m.is_watertight),"volume":float(m.volume),"components":[{"bounds":c.bounds.tolist(),"faces":len(c.faces)} for c in m.split(only_watertight=False)][:12]})
+                              fig=plt.figure(figsize=(10,7));vv=m.vertices;ff=m.faces
+                              for j,(az,el) in enumerate([(45,25),(0,0),(90,0),(0,90)]):
+                                  ax=fig.add_subplot(2,2,j+1,projection="3d");ax.add_collection3d(Poly3DCollection(vv[ff],facecolor="#9ebbd0",edgecolor="none"))
+                                  ctr=m.bounds.mean(axis=0);rad=max(m.extents)/2*1.05
+                                  ax.set_xlim(ctr[0]-rad,ctr[0]+rad);ax.set_ylim(ctr[1]-rad,ctr[1]+rad);ax.set_zlim(ctr[2]-rad,ctr[2]+rad)
+                                  ax.set_box_aspect((1,1,1));ax.view_init(el,az);ax.set_xlabel("X mm");ax.set_ylabel("Y mm");ax.set_zlabel("Z mm")
+                              fig.suptitle(entry.filename);fig.tight_layout();out=io.BytesIO();fig.savefig(out,format="png",dpi=90);plt.close(fig)
+                              result["previews"].append({"name":entry.filename,"png":base64.b64encode(out.getvalue()).decode()})
+                  result["archives"].append({"source":i,"members":records})
+              answer={"ok":True,"result":result}
+          except BaseException: answer={"ok":False,"error":traceback.format_exc()}
+          print("MODEL_RESULT="+base64.b64encode(bytes(box.encrypt(json.dumps(answer).encode()))).decode(),flush=True)
+          
